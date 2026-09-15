@@ -28,7 +28,7 @@ where a document and the code disagree, the code is what exists. Propose work wh
 confirmed in code, not the topics your context discusses most.
 Call history to see what has actually changed recently, and search to check a specific claim, before
 treating any document's description of an open problem as current.
-If a durable graph is supplied below the objective, it is this system's own record of the problem.
+If a durable graph is supplied during the investigation, it is this system's own record of the problem.
 Its recorded outcomes describe work that was actually performed and what was observed; treat them as
 established results and do not propose work an outcome reports as already done or already refuted.
 Nodes carrying no outcome are still open. You may keep, drop, reword or replace any node.
@@ -100,14 +100,22 @@ export async function plan(objective, directory, {
     }
     const messages = [
       { role: 'system', content: instructions },
-      { role: 'user', content: prior
-        ? `${objective}\n\nThe durable graph for this objective, including outcomes recorded by a human after work was performed:\n${JSON.stringify(prior, null, 2)}`
-        : objective },
+      { role: 'user', content: objective },
     ];
     attempt.priorGraph = prior ? graphPath : null;
+    let supplied = false;
     const investigation = attempt.investigation;
+    const researched = () => investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result));
     for (let turn = 1; turn <= MAX_REQUESTS; turn++) {
       attempt.requests = turn;
+      // Supplied with the graph up front, a real run answered with the graph: it restated three
+      // of its four nodes verbatim, read nothing, and cited files it had never opened. The
+      // durable state is real input, so it is withheld until the repository has actually been
+      // investigated, and never allowed to stand in for investigating it.
+      if (prior && !supplied && researched()) {
+        supplied = true;
+        messages.push({ role: 'user', content: `Now that you have investigated, here is the durable graph for this objective, including outcomes recorded by a human after work was actually performed:\n${JSON.stringify(prior, null, 2)}` });
+      }
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,
         tool_choice: turn === MAX_REQUESTS ? 'none' : 'auto',
@@ -152,7 +160,7 @@ export async function plan(objective, directory, {
       // at all was rejected here and its answer was lost, which is the failure failed-run.json
       // exists to prevent; the preservation path only triggered once this had already been set.
       attempt.answer = message.content;
-      if (!investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result))) {
+      if (!researched()) {
         throw new Error('The model proposed a graph without reading repository evidence.');
       }
       // A complete, otherwise valid graph was once discarded because the model wrapped it in a

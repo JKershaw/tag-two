@@ -375,18 +375,24 @@ test('the planner is handed a durable graph with its recorded outcomes when the 
   durable.nodes[0].outcomes = [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Worked and refuted.' }];
   await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
 
-  let prompt;
+  let sent;
   let calls = 0;
   const fetchImpl = async (url, options) => {
     if (++calls === 1) return catalog();
-    if (calls === 2) return toolAnswer();
-    prompt = JSON.parse(options.body).messages[1].content;
+    const messages = JSON.parse(options.body).messages;
+    if (calls === 2) {
+      assert.equal(messages.length, 2, 'the graph is withheld until the repository is investigated');
+      assert.equal(messages[1].content, objective);
+      return toolAnswer();
+    }
+    sent = messages.at(-1);
     return answer(JSON.stringify(graph()));
   };
   await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
-  assert.match(prompt, /^Improve the project\n\nThe durable graph for this objective/);
-  assert.match(prompt, /Worked and refuted\./, 'recorded outcomes reach the model');
-  assert.doesNotMatch(prompt, /"investigation"/, 'the transcript is not resent');
+  assert.equal(sent.role, 'user');
+  assert.match(sent.content, /^Now that you have investigated, here is the durable graph/);
+  assert.match(sent.content, /Worked and refuted\./, 'recorded outcomes reach the model');
+  assert.doesNotMatch(sent.content, /"investigation"/, 'the transcript is not resent');
   const written = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
   assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
 });
