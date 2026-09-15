@@ -1,0 +1,20 @@
+{
+  "name": "tag-two",
+  "version": "0.1.0",
+  "description": "A tiny repository-investigating task graph experiment",
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JKershaw/tag-two.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "tag": "./bin/tag.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
