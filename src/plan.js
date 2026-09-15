@@ -26,6 +26,8 @@ Before proposing a task, check in the code whether it is already done, and do no
 repository already implements. Documentation discussing a problem is not evidence that it is unsolved:
 where a document and the code disagree, the code is what exists. Propose work whose absence you
 confirmed in code, not the topics your context discusses most.
+Call history to see what has actually changed recently, and search to check a specific claim, before
+treating any document's description of an open problem as current.
 Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
