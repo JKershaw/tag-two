@@ -666,3 +666,200 @@ number has three times deferred this and never answered it, and because the hone
 move is to decide what durable knowledge a planner should be given at all — a question the
 outcomes-versus-nodes result has already started answering and the next experiment should
 finish. `tag observe` will report the truncation on any run it affects.
+
+---
+
+## The bounded-objective trial (runs 22–41)
+
+The strongest open lead after twenty-one runs was a single pair of control runs: a
+bounded objective produced two concrete, correctly located nodes out of three where the
+standing broad objective produced none out of five. That pair was n=1 per arm, used a
+hand-authored objective, and ran at a repository state that has no durable graph. This
+trial tests the claim the lead was turned into: **that bounded objectives drawn from the
+durable graph's own ready nodes decompose materially better than the standing broad
+one.**
+
+Twenty runs, one variable at a time, $0.11857 in total. The design was written down
+before any run was made and is archived unedited at
+[`examples/bounded-objective-trial/PREREG.md`](examples/bounded-objective-trial/PREREG.md);
+every run, accepted or rejected, is archived beside it under its arm label. No source
+file was changed at any point in the trial.
+
+Planner code, model, temperature and budgets were the shipped ones throughout. Every
+HEAD run planned against a worktree of commit `f8470d0` and every SEED run against a
+worktree of `e1e580e`, so within each state the repository, the accumulated prose and
+the supplied outcomes were byte-identical across arms and the objective string was the
+only difference. Nothing was committed until all twenty runs had finished.
+
+| Arm | State | Objective | Runs | Graphs |
+| --- | --- | --- | --- | --- |
+| A broad | HEAD | *Make tag-two better at achieving its purpose.* | 3 | 1 |
+| B bounded, drawn from graph | HEAD | *Investigate tool usage patterns.* | 3 | 0 |
+| Bp bounded, graph title + reason | HEAD | title and reason of the same node, verbatim | 2 | 0 |
+| C bounded, drawn from graph | HEAD | *Enforce evidence validation.* | 2 | 0 |
+| D bounded, hand-authored | HEAD | *Reduce the chance that a planning run produces no usable output.* | 2 | 0 |
+| E bounded, hand-authored | SEED | the same objective as D | 3 | 3 |
+| F broad | SEED | the same objective as A | 3 | 2 |
+| G bounded, hand-authored | SEED | *Reduce the number of model requests a planning run needs.* | 2 | 1 |
+
+Arms B and C take the objective from the durable graph mechanically: it is the verbatim
+title of a ready node (`dependsOn: []`), with a full stop. Nothing else from the node is
+put in the prompt, because handing node bodies to the planner is the known mirroring
+failure of runs 12, 13 and 18. Arm Bp adds the node's `reason` verbatim to test whether
+the form of the title, rather than its brevity, was the problem. C's node has a recorded
+outcome saying its work was done and the code implements it; it is in the trial
+deliberately, to test whether a bounded objective stops the planner reproposing finished
+work.
+
+A node was scored **useful** only if all four held: it names a concrete locus rather than
+a module to review; its citation, resolved against the actual file at that commit, points
+at the thing it describes; the work is absent from the code at that commit and not
+reported done by a recorded outcome; and doing it would move the objective that run was
+given. Every citation in every run was resolved to its real file content before scoring.
+
+### Result 1: a graph node cannot currently be used as an objective at all
+
+**Seven of seven runs given an objective drawn from the graph produced no graph**, and
+six of the seven died the same way — the planner rewrote the objective, and the echo
+check rejected it.
+
+| Run | Objective given | Objective returned |
+| --- | --- | --- |
+| B1 | Investigate tool usage patterns. | Investigate tool usage patterns in tag-two to improve decomposition quality. |
+| B2 | Investigate tool usage patterns. | Investigate tool usage patterns in tag-two. |
+| B3 | Investigate tool usage patterns. | Investigate tool usage patterns in tag-two |
+| Bp1 | (title + reason, verbatim) | Investigate tool usage patterns to improve the planner's effectiveness |
+| Bp2 | (title + reason, verbatim) | Investigate tool usage patterns to improve the planner's effectiveness |
+| C1 | Enforce evidence validation. | **Make tag-two better at achieving its purpose.** |
+| C2 | Enforce evidence validation. | **Make tag-two better at achieving its purpose.** |
+
+The hand-authored bounded objective did not drift in any of the five runs that used it
+(D, E), and the broad objective never drifted. Adding the node's `reason` did not help:
+Bp drifted identically, twice. **A node title is a task label, not an objective, and the
+model completes it into one.** Both C runs replaced the given objective with the
+repository's own standing objective — the one written across the README, the experiment
+log and the durable graph. This is mirroring reaching one level further than it ever has:
+not the node bodies, not the evidence, but the objective itself.
+
+That failure is mechanical, so it does not on its own say anything about decomposition
+quality. The rejected answers are preserved, and they do.
+
+### Result 2: at HEAD, narrowing the objective changed nothing worth having
+
+Scoring the nodes of every HEAD run — accepted or rejected, guards ignored:
+
+| Arm | Runs | Nodes proposed | Useful nodes |
+| --- | --- | --- | --- |
+| A broad | 3 | 7 | **0** |
+| B + Bp + C bounded from graph | 7 | 28 | **0** |
+| D bounded hand-authored | 2 | 4 | **0** |
+
+**Zero useful nodes out of thirty-nine, in every arm.** The bounded arms did read
+slightly more: B1 and B2 opened seven files each against the broad arm's three to six.
+But what they proposed came from the prose, not the code. Of the evidence citations in
+arms B and Bp, twenty-six name `README.md`, `EXPERIMENTS.md` or `notes/steward-log.md`
+and ten name a source file; B3 and Bp2 read only the README and cited nothing else.
+Two runs proposed *"Test bounded objectives for decomposition"*, citing the control
+section of this file — they proposed the experiment they were part of, by reading the
+paragraph that announced it. Arm C, whose objective named work the code already
+contains, proposed that work again in both runs.
+
+**Narrowing the objective did not make the planner investigate the relevant problem. It
+made it paraphrase the part of the accumulated analysis that the narrower objective
+pointed at.** That is the same defect as before, aimed more precisely.
+
+### Result 3: at the seed state, the effect is real, replicates, and is not about breadth
+
+Same scoring, at `e1e580e`, where no analysis of any run exists in the planner's input:
+
+| Arm | Runs | Graphs | Nodes | Useful nodes |
+| --- | --- | --- | --- | --- |
+| F broad (+ the archived control A) | 4 | 3 | 14 | **0** |
+| E bounded, names a failure (+ the archived control B) | 4 | 4 | 15 | **6** |
+| G bounded, names a quantity | 2 | 1 | 5 | **0** |
+
+The broad arm reproduced itself exactly: F1 and F2 are the same investigate-node-plus-
+per-module-reviews shape as the first run and the control, and both propose work the seed
+already implements while citing its implementation — F1's `add-validation-tests` cites
+`test/tag.test.js:52`, which is the test that validates dependencies, and F2's
+`enhance-html` cites the escaping function and the test that covers it.
+
+The bounded arm found real things, three runs out of three:
+
+- E2's `adjust-investigation-limits` cites `src/plan.js:8-11` — `MAX_REQUESTS`,
+  `MAX_OUTPUT`, `MAX_CONTEXT_BYTES` — and says the limits may be too restrictive for
+  reliable graph production. Runs 6, 17 and 21 later died on exactly those three
+  constants.
+- E3's `test-fallback-behavior` cites `src/plan.js:130`, the single line
+  `if (!saving) await rm(output, { recursive: true });`, and proposes keeping partial
+  output when validation fails. That is `failed-run.json`, which this project built ten
+  runs later and now calls the highest-value mechanism in the repository.
+- E2's `improve-validation-feedback` lands on the exact-match objective check at
+  `src/graph.js:3-31`, which was later loosened because it was throwing away valid
+  graphs over a full stop.
+
+None of those three facts is stated anywhere in the seed repository's prose. They were
+found by reading the code against a question.
+
+**And then arm G refuses the simple reading.** *"Reduce the number of model requests a
+planning run needs."* is just as bounded as E's objective, at the same commit, in the
+same trial. One of its two runs produced no graph at all — it wrote prose before its
+JSON, after eight requests and six files, the most expensive run of the trial. The other
+read the README and nothing else, cited the README five times and no source file once,
+and proposed *understand current planning*, *analyse usage*, *optimise research*,
+*implement batching*, *test changes*: the broad arm's shape under a narrow objective.
+
+So boundedness is not the active ingredient. What E's objective has and G's lacks is a
+**failure with a locus in the code**: a planning run producing no usable output is
+something the seed's source is full of — throw sites, limits, a validator, a line that
+deletes the evidence — and a question about it can be answered by reading them. A
+request count is a number with nowhere to look.
+
+### What this trial establishes
+
+1. **The hypothesis as stated is refuted.** Objectives drawn from the durable graph's
+   ready nodes did not decompose better than the standing broad objective. They produced
+   no valid graph in seven attempts, and their preserved answers contained no useful node
+   in twenty-eight.
+2. **The parent claim survives only in a narrower form,** and now with n=4 per arm rather
+   than n=1: at a repository state carrying no analysis of its own runs, an objective
+   naming a failure that can be located in code decomposes materially better than the
+   broad objective — 6 useful nodes of 15, against 0 of 14 — and the broad arm's result
+   replicates too.
+3. **The dominant variable is not the objective. It is the repository state.** Every arm
+   at HEAD scored zero. Every useful node in the trial came from the seed state. The
+   accumulated prose is not merely something the planner mirrors when the objective is
+   broad; it is strong enough to overwrite a narrow objective with the repository's own.
+
+### Contradictory evidence and confounders, kept
+
+- **G refutes "bounded is better" as a general claim.** It is preserved in full and it is
+  the reason the surviving claim is narrower than the lead that prompted this trial.
+- **A2 is the broad arm's one accepted graph at HEAD**, and one of its three nodes is
+  *"Explore bounded objectives"* — the broad objective reaching the same topic the
+  bounded arms were pointed at, by reading the same paragraph.
+- **HEAD is not a fair comparison for "useful work exists".** Much of the obvious work in
+  this repository is now done, so a zero at HEAD is partly the state having fewer easy
+  gaps, not only the planner failing. The objective substitution in C1 and C2 and the
+  26-to-10 prose-over-code citation ratio are not explained by that.
+- **Scoring was not blind.** Citations were resolved mechanically against the real files
+  before judgement, but a node's text usually reveals which objective produced it, so the
+  useful/not-useful call is a human's and is stated as such.
+- **Five runs of twenty produced no graph for reasons unrelated to any arm:** A3, D2 and
+  F3 answered without reading anything at all (two requests, `list_files` only), and G1
+  wrapped its answer in prose. Failure to produce output is common across every arm and
+  every state.
+- **The trial was run in parallel worktrees.** Nothing in the planner depends on the
+  working directory beyond the repository it reads, but the runs are not serialised and
+  provider-side conditions were not held constant across batches.
+
+### Where the experiment stands after forty-one runs
+
+The graph's recorded outcomes remain the one channel of durable state that has ever
+caused the planner to say something it could not have read. The graph's **nodes** have
+now been tested as a source of objectives and do not work as one: their titles are task
+labels, the model rewrites them, and at the state where the graph exists the narrower
+objective only aimed the mirroring more precisely.
+
+The thing the trial found instead is about the objective's relationship to the code, not
+its width — and it was found at a commit from before any of this machinery existed.

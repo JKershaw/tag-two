@@ -1,0 +1,19 @@
+{
+  "objective": "Make tag-two better at achieving its purpose.",
+  "failure": "The model proposed a graph without reading repository evidence.",
+  "run": {
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "createdAt": "2026-09-15T18:17:22.846Z",
+    "requests": 2,
+    "costUsd": 0.00059454,
+    "investigation": [
+      {
+        "tool": "list_files",
+        "arguments": {},
+        "result": "{\"files\":[\".gitignore\",\"EXPERIMENTS.md\",\"LICENSE\",\"README.md\",\"bin/tag.js\",\"examples/control-seed-bounded/graph.html\",\"examples/control-seed-bounded/graph.json\",\"examples/control-seed-broad/graph.html\",\"examples/control-seed-broad/graph.json\",\"examples/eighteenth-dogfood/failed-run.json\",\"examples/eighth-dogfood/failed-run.json\",\"examples/eleventh-dogfood/failed-run.json\",\"examples/fifteenth-dogfood/graph.html\",\"examples/fifteenth-dogfood/graph.json\",\"examples/fifth-dogfood/graph.html\",\"examples/fifth-dogfood/graph.json\",\"examples/first-dogfood/graph.html\",\"examples/first-dogfood/graph.json\",\"examples/fourteenth-dogfood/graph.html\",\"examples/fourteenth-dogfood/graph.json\",\"examples/fourth-dogfood/graph.html\",\"examples/fourth-dogfood/graph.json\",\"examples/nineteenth-dogfood/graph.html\",\"examples/nineteenth-dogfood/graph.json\",\"examples/ninth-dogfood/failed-run.json\",\"examples/second-dogfood/graph.html\",\"examples/second-dogfood/graph.json\",\"examples/seventeenth-dogfood/failed-run.json\",\"examples/seventh-dogfood/graph.html\",\"examples/seventh-dogfood/graph.json\",\"examples/sixteenth-dogfood/failed-run.json\",\"examples/sixth-dogfood/failed-run.json\",\"examples/third-dogfood/failed-run.json\",\"examples/thirteenth-dogfood/graph.html\",\"examples/thirteenth-dogfood/graph.json\",\"examples/twelfth-dogfood/graph.html\",\"examples/twelfth-dogfood/graph.json\",\"examples/twentieth-dogfood/graph.html\",\"examples/twentieth-dogfood/graph.json\",\"notes/steward-log.md\",\"package.json\",\"src/adopt.js\",\"src/graph.js\",\"src/observe.js\",\"src/plan.js\",\"src/record.js\",\"src/repository.js\",\"test/tag.test.js\"],\"total\":48,\"nextOffset\":null}"
+      }
+    ],
+    "priorGraph": "/tmp/claude-0/-home-user-tag-two/0ca76e4f-d9dd-57bb-9674-e62a2abf5a9a/scratchpad/wt/h1/graph/graph.json",
+    "answer": null
+  }
+}
