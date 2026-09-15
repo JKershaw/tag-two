@@ -117,9 +117,13 @@ export async function plan(objective, directory, {
         throw new Error('The model proposed a graph without reading repository evidence.');
       }
       attempt.answer = message.content;
+      // A complete, otherwise valid graph was once discarded because the model wrapped it in a
+      // markdown fence. Removing that envelope is not JSON repair: malformed JSON inside it,
+      // a drifted objective or an invalid graph are still rejected exactly as before.
+      const fenced = message.content.trim().match(/^```[a-z]*\s*\n([\s\S]*?)\n?```$/i);
       let graph;
       try {
-        graph = validateGraph(JSON.parse(message.content), objective);
+        graph = validateGraph(JSON.parse(fenced ? fenced[1] : message.content), objective);
       } catch (error) {
         throw new Error(`Invalid planner graph: ${error.message}. No repair or retry was made.`);
       }

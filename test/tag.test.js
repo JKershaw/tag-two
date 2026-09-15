@@ -205,6 +205,36 @@ test('missing credentials, network failure, HTTP errors and excessive prices fai
   }
 });
 
+test('a graph wrapped in a markdown fence is unwrapped, but broken JSON is still not repaired', async t => {
+  // A complete-research run produced a valid four-node graph and lost it to three backticks.
+  for (const [content, expected] of [
+    ['```json\n' + JSON.stringify(graph()) + '\n```', null],
+    ['```\n' + JSON.stringify(graph()) + '```', null],
+    [JSON.stringify(graph()), null],
+    ['```json\n{"objective": "Improve the project", nodes: [\n```', /Invalid planner graph/],
+    ['Here is the graph: ' + JSON.stringify(graph()), /Invalid planner graph/],
+  ]) {
+    const directory = await fixture(t);
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls++;
+      if (calls === 1) return catalog();
+      if (calls === 2) return toolAnswer();
+      return answer(content);
+    };
+    if (expected) {
+      await assert.rejects(plan(objective, directory, { apiKey: 'test-only', fetchImpl }), expected);
+      await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+    } else {
+      await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+      const saved = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
+      assert.equal(saved.nodes.length, 2);
+      // The unedited model answer is recorded as returned, fence included.
+      assert.equal(saved.run.investigation.length, 1);
+    }
+  }
+});
+
 test('invalid or unresearched model output is not repaired or retried', async t => {
   for (const researched of [true, false]) {
     const directory = await fixture(t);
