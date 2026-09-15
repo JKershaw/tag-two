@@ -2,6 +2,102 @@ tag-two
 
 «A tiny experiment in persistent, agent-assisted problem solving.»
 
+## Run the seed
+
+Requires Node.js 22+ and Git. There are no package dependencies or build step.
+From a Git repository's root, set `OPENROUTER_API_KEY` in your environment (never
+in a tracked file), then run:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js plan "Make tag-two better at achieving its purpose."
+```
+
+An optional final argument selects another repository root. To use the shorter
+`tag plan "objective"` command, run `npm link` in the tag-two checkout first.
+Run the offline tests with `npm test` in that checkout.
+
+The planner uses one OpenRouter model, `deepseek/deepseek-chat-v3-0324`, with
+read-only tools to list/read/search tracked text files and inspect recent commit
+subjects. The model chooses what to investigate; no source excerpts are selected
+in advance. Add new source files to Git before planning. It cannot execute shell
+commands, run tests, modify source, or work on the proposed tasks. Its claims about
+what works are therefore explicitly unverified unless repository evidence supports them.
+
+**Data boundary:** the objective and model-requested repository content are sent to
+OpenRouter and its model provider. Use only repositories you are authorized to
+share. Untracked files, common credential paths, symlinks, binary files and files
+larger than 256 KiB are excluded; these filters are not a secret detector. Review
+tracked content for embedded secrets before using the planner.
+
+After investigation, open `.tag/graph.html` directly in a browser. It shows the
+objective, research summary, task reasons and evidence, linked dependencies,
+ready/blocked tasks, and the tool results behind the plan. `.tag/graph.json` is the
+durable, provider-independent graph; its `run` field records model provenance,
+reported cost (or null when unavailable), and investigation history.
+
+The graph is a proposal, not an execution queue: “ready” means no graph dependencies,
+and a human decides what happens next. Nothing runs automatically afterward.
+Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
+including when planning in another repository, because they may include repository
+content. Existing `.tag` directories are never overwritten: preserve or move a
+previous experiment explicitly before starting another.
+
+The seed allows at most ten model requests, 4,096 output tokens per request and
+80,000 serialized request bytes. It checks model pricing and caps provider prices
+at $0.50/million input tokens and $1.50/million output tokens, with no per-request
+fee. At these limits, even conservatively counting each request byte as an input
+token leaves the run below $1 (roughly $0.47 before small protocol overhead).
+Unavailable models, higher prices, network errors, exhausted limits or invalid
+graphs stop the run without automatic retries, JSON repair or fabricated tasks.
+An output write failure can leave a partial `.tag` directory; inspect it before
+moving it aside.
+
+The first dogfood run should use the objective above exactly once. Inspect its
+unedited graph for usefulness rather than rerunning until the answer looks good.
+
+**First attempt (2026-09-15):** the command above stopped at the model-catalog
+request because `openrouter.ai` could not be resolved (`ENOTFOUND`) in the build
+environment. No model inference request was made and no graph was generated.
+
+**First completed dogfood run (2026-09-15):** after the domain allowlist was
+updated, one run of the unchanged planner succeeded. DeepSeek V3 0324 made three
+model requests at a reported total cost of **$0.00399975**. It listed files and
+read the first 200 lines of the README, all three implementation modules, and
+the test file. It did not paginate the README, inspect history, or run tests.
+
+The unedited outputs are preserved in
+[`examples/first-dogfood/graph.json`](examples/first-dogfood/graph.json) and
+[`examples/first-dogfood/graph.html`](examples/first-dogfood/graph.html).
+Download/open the HTML locally to inspect it. These are explicitly archived
+experiment artifacts, including the original repository investigation transcript;
+normal `.tag` output remains ignored.
+
+The graph proposed five tasks:
+
+1. Investigate README.md for project purpose and principles.
+2. Review graph validation and rendering logic (depends on 1).
+3. Examine the planning module for constraints and behavior (depends on 1).
+4. Test repository tools for file handling and security (depends on 1).
+5. Analyze the test suite for coverage and gaps (depends on 2, 3, and 4).
+
+**Assessment: the mechanics work, but this is not yet a useful decomposition.**
+Most tasks repeat inspection the planner already performed, without identifying
+a demonstrated weakness or a concrete improvement to the central experiment.
+The dependencies mostly express review order rather than necessary task results.
+The summary does not clearly distinguish inspected tests from verified runtime
+behaviour, or identify the remaining uncertainties. Its evidence citations are
+broad file ranges rather than observations that justify specific work.
+
+This run exposes a research-quality problem, not a need for more orchestration:
+the agent stopped reading the README before reaching the lessons, scope limits
+and first-success criteria, despite having requests left. It then largely
+mirrored the files it inspected. The next experiment should address that observed
+gap in research and decomposition, not automatically execute this graph or add
+scheduling machinery. No tasks were executed and no extra run was made to obtain
+a more appealing answer.
+
+---
+
 Why this exists
 
 Modern coding agents are remarkably capable when given a well-defined task.
