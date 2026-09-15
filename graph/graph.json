@@ -70,6 +70,12 @@
       "title": "Expand tool usage beyond file reading",
       "at": "2026-09-15T17:28:03.193Z",
       "outcome": "CORRECTION 2026-09-15 (ninth dogfood run). The refutation recorded above was drawn from a single run and is wrong as stated. With the identical instruction still in place, run 9 called history for the first time in nine runs. So a system-instruction directive CAN produce a tool call from this model; it just does not do so reliably, and one run is not enough to refute a behavioural hypothesis. Evidence: examples/ninth-dogfood/failed-run.json, investigation entry 7. What run 9 also showed is more useful: it never opened graph/graph.json, so the outcome recorded on this node had no effect on its planning, and it proposed this very node again. Recording an outcome is not the same as consulting one."
+    },
+    {
+      "node": "enhance-evidence",
+      "title": "Enhance evidence collection in task proposals",
+      "at": "2026-09-15T17:41:43.534Z",
+      "outcome": "Worked 2026-09-15 (fifteenth change). Built `tag observe`, which reports what a run actually did and lists every evidence citation naming a file the run never opened. Measured across all eight archived graphs: runs 1, 2, 4, 5 and 7 invented 0 of 44 citations; runs 12 and 13, each handed the whole durable graph, invented 4 of 8; run 14, handed only recorded outcomes, invented 2 of 8. ESTABLISHED: invented citations did not exist before durable state was supplied, and reducing what is supplied reduces them. The defect is caused by the supply mechanism, not by the model's general habits. Not yet tried: rejecting or flagging a graph whose evidence cites unread files."
     }
   ]
 }
