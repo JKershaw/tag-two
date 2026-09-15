@@ -621,3 +621,48 @@ that the seed already had.
 cost and with no code change.** Two of three nodes concrete and correctly located,
 against none of five. This is the strongest lead the experiment has, and it required
 neither new machinery nor a different model.
+
+---
+
+## Where the experiment stands after twenty-one runs
+
+**tag-two is part of the causal loop of its own development.** The clearest single
+instance is the eleventh run: a result observed in run 8 was written into the durable
+graph with `tag record`, and the next run dropped the node that outcome concerned and
+proposed the follow-on the outcome named — a sentence that existed in no file the
+planner read, because it read nothing. Since then a complete cycle has run through the
+graph rather than around it: the durable graph's only ready node named evidence quality;
+`tag observe` was built to measure it; the measurement showed invented citations were
+caused by supplying durable state; the citation guard was built and the rate went 7 of
+10, 3, 3, 0; and each result was recorded back and carried across a replanning by
+`tag adopt`.
+
+**What tag-two now does that it could not before:** hold durable knowledge of work
+actually performed and carry it across replannings; consult that knowledge when
+planning; report what any run really did, which tools it called, which files it read
+whole or truncated, and which of its citations name files it never opened; and refuse
+its own output when the evidence does not check out.
+
+**What it still cannot do:** decide when to run, change any code, form a hypothesis,
+judge a result, or write an outcome. Every one of those is still a human's.
+
+**What the controls establish, against the grain of the above:** the decomposition — the
+thing this project exists to produce — has not improved in twenty-one runs. The
+improvements are to research mechanics and honesty. A graph that cites only what it read
+and still proposes finished work is more honest, not more useful.
+
+**The strongest open lead is the cheapest one.** A bounded objective produced two
+concrete, correctly located nodes out of three where the standing broad objective
+produced none out of five, on the same repository, with no code change. The next
+experiment should establish whether bounded objectives drawn from the durable graph's own
+ready nodes decompose usefully, before anything is built to execute what they propose.
+
+**A note left deliberately unfixed.** This file passed 40,000 bytes on the commit that
+added the section above, so the planner now receives it truncated — the fourth time this
+repository has outgrown its own reader, after the request budget at run 6, the README at
+run 12, and the request budget again at run 17. The part it loses is the most recent part,
+which is the part that matters most. It is recorded rather than patched because raising a
+number has three times deferred this and never answered it, and because the honest next
+move is to decide what durable knowledge a planner should be given at all — a question the
+outcomes-versus-nodes result has already started answering and the next experiment should
+finish. `tag observe` will report the truncation on any run it affects.

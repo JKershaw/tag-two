@@ -768,3 +768,11 @@ Do not build the final system.
 
 Build the thing that lets us run the next experiment.
 
+Where that stands after twenty-one runs, in short: a real improvement to tag-two has
+travelled through tag-two's own durable graph, and a complete cycle — ready node,
+work, measurement, recorded outcome, adopted graph — has run through it. The graph is
+now honest about its evidence and knows what has already been tried. It is not yet
+useful at deciding what should be done next: run against this repository as it stood
+twenty runs ago, with none of the accumulated analysis in its input, it produces the
+same shape of decomposition it produced then. `EXPERIMENTS.md` has the runs.
+
