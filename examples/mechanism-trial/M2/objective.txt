@@ -1,0 +1,1 @@
+A planning run sometimes discards a complete answer the model has already produced.

@@ -776,14 +776,19 @@ useful at deciding what should be done next: run against this repository as it s
 twenty runs ago, with none of the accumulated analysis in its input, it produces the
 same shape of decomposition it produced then.
 
-Twenty further runs tested whether a narrower objective fixes that, and it does not, at
-least not here. Objectives taken from the durable graph's own ready nodes produced no
-graph at all in seven attempts — the planner rewrites a node title into an objective and
-the echo check rejects it, and twice it replaced the given objective with this
-repository's standing one. Against the seed commit, where no analysis of any run is in
-the planner's input, a bounded objective naming a failure that can be found in the code
-did decompose materially better than the broad one, replicated across four runs; a
-bounded objective naming a quantity with nowhere to look did not. The active ingredient
-is the objective's relationship to the code, not its width, and the accumulated prose in
-this repository outweighs both. `EXPERIMENTS.md` has the runs.
+Twenty-six further runs tested whether a narrower objective fixes that, and it does not.
+Objectives taken from the durable graph's own ready nodes produced no graph at all in
+seven attempts — the planner rewrites a node title into an objective and the echo check
+rejects it. A following trial then tested the explanation that survived, that what
+matters is naming a failure whose mechanism is discoverable in the code, and refuted that
+too: two of three such objectives produced the same investigate-plus-review shape the
+broad objective produces, citing whole files.
+
+What did not go away is stranger than what was being tested. Four runs across both trials
+returned an objective that was not the one they were given, and two of those returned
+«Make tag-two better at achieving its purpose.» at the seed commit, where no analysis of
+any run exists — because this README states that objective. A repository that writes down
+what it is for can overwrite the objective a run was given, and every objective not
+already phrased as a goal has been rewritten: six node titles, three declarative
+sentences, nine for nine. `EXPERIMENTS.md` has the runs.
 

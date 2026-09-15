@@ -1,0 +1,1 @@
+Shorten the time between starting a planning run and having a graph to read.

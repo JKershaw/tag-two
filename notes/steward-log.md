@@ -169,3 +169,41 @@ I did not change any source file during the trial, and I am not changing one now
 consequence of this result — that the useful objective is one with a locus in code, and
 that the graph's nodes do not supply one — is an architectural claim resting on four
 graphs at one commit. It needs its own experiment before it needs an implementation.
+
+## The mechanism trial, runs 42–47 (2026-09-15)
+
+I designed this one to kill my own surviving explanation, and it did.
+
+The explanation was mine, not the system's: after runs 22–41 I wrote that the active
+ingredient was an objective naming a failure with a locus in the code. It came from
+comparing two objectives. Three fresh ones on each side of that line, and the line is not
+there — two of the three failure-shaped objectives produced exactly the shape the broad
+objective produces, whole-file citations and all.
+
+I made a design error and it is worth writing down rather than smoothing over. My
+failure-shaped objectives are declarative sentences — *"A planning run sometimes ..."* —
+and my target-shaped ones are imperatives. So the arm that drifted 3 of 3 differs from the
+arm that drifted 1 of 3 in two ways, and I cannot separate them with these six runs. I
+noticed it while scoring, not while designing. The right response is to report the
+confound, not to re-run the arm with reworded objectives, which would be choosing the
+wording that gives me the result.
+
+The thing I did not design for is the one worth keeping. Two runs at the seed commit
+returned «Make tag-two better at achieving its purpose.» as their objective. Not at HEAD,
+where I had blamed the experiment log. At the commit with no log, no graph and no analysis
+of anything — because the README says that sentence. After the last trial I wrote that the
+accumulated prose was strong enough to overwrite a narrow objective. That was too kind to
+my own explanation. It is not the accumulated prose. It is any prose that states an
+objective, including the four-hundred-line README this project has had since the first
+commit.
+
+Three explanations refuted in twenty-six runs and none supported. I am recording that as
+the result rather than reaching for a fourth, because the pattern in the last two trials
+is that I find an explanation in a pair of runs, it survives one retelling, and it dies
+the moment it gets three fresh instances. The next explanation should be made to face
+three instances before it goes in a summary paragraph.
+
+I did not change any source file in this trial either, and the log now says out loud what
+the one candidate change is — `observe` saying whether the graph's objective is the run's
+objective — so that when a run needs it, it is already measured, and so that I do not
+build it today because I just noticed it.

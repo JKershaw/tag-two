@@ -863,3 +863,133 @@ objective only aimed the mirroring more precisely.
 
 The thing the trial found instead is about the objective's relationship to the code, not
 its width — and it was found at a commit from before any of this machinery existed.
+
+---
+
+## The mechanism trial (runs 42–47)
+
+Runs 22–41 ended with one explanation left standing: that what made an objective useful
+was not its width but whether it named a failure with a mechanism discoverable in the
+code. That rested on a single contrast between two objectives. This trial put three fresh
+objectives on each side of it.
+
+Six runs, all at `e1e580e`, one per objective, design written down first and archived at
+[`examples/mechanism-trial/PREREG.md`](examples/mechanism-trial/PREREG.md). No source file
+changed. $0.03396.
+
+**Arm M — names a concrete observed failure with a mechanism in the seed source:**
+
+- M1 *"A planning run sometimes proposes work this repository has already implemented."*
+- M2 *"A planning run sometimes discards a complete answer the model has already produced."*
+- M3 *"A planning run sometimes exhausts its research budget before the model answers."*
+
+**Arm T — equally bounded, names a measurable target, names no failure:**
+
+- T1 *"Reduce the number of tracked files a planning run needs to read."*
+- T2 *"Increase the proportion of proposed tasks that carry a line-level citation."*
+- T3 *"Shorten the time between starting a planning run and having a graph to read."*
+
+Paired by subsystem so the arms were not aimed at different code: M3↔T1, M2↔T3, M1↔T2.
+Same rubric as before, every citation resolved against the real file at `e1e580e` before
+judging, rejected runs scored from their preserved answers.
+
+### The result refutes the hypothesis, in the opposite direction
+
+| Arm | Runs | Graphs | Nodes | Useful | Mechanism located | Objective survived |
+| --- | --- | --- | --- | --- | --- | --- |
+| M failure-shaped | 3 | 0 | 11 | **1** | 1 of 3 | **0 of 3** |
+| T target-shaped | 3 | 2 | 12 | **2** | n/a | 2 of 3 |
+
+The pre-registered condition for support was that every arm-M run yield at least one
+useful node and arm T at most one in total. Neither half held. **A concrete observed
+failure with a discoverable mechanism did not reliably cause the planner to investigate
+it.**
+
+M2 and M3 are the clearest refutation. Both name a failure whose mechanism is a few lines
+of `src/plan.js`, and both produced the canonical broad-objective shape: an investigate
+node plus per-module reviews, evidenced by whole-file citations —
+`src/plan.js:1-133`, `src/graph.js:1-71`, `src/repository.js:1-99`, and in M3's case
+`README.md:1-697` three times. M2 never mentioned the line that parses the answer or the
+line that deletes the output, which are the mechanism it was pointed at. M3 called
+`history`, read four files, and named none of the three budget constants.
+
+The useful nodes came one from each arm and a half:
+
+- M1's `update-instructions` locates the absent instruction at `src/plan.js:12-27` — the
+  change this project actually made after run 5.
+- T2's `enhance-evidence-citations` cites `src/graph.js:10-14` and observes that node
+  validation requires non-empty evidence but does not constrain its format. Correct,
+  precisely located, absent from the seed.
+- T3's `optimize-tool-calls` cites `src/plan.js:94-95` and observes that tool calls are
+  awaited one at a time inside the loop. Correct, and it would do what its objective asks.
+
+### What the six runs actually separate
+
+Not the arms. The citation shape:
+
+| Run | Objective survived | Files read | Citations | ≤20 lines | ≥60 lines | Useful |
+| --- | --- | --- | --- | --- | --- | --- |
+| M1 | no | 3 | 6 | 3 | 1 | 1 |
+| M2 | no | 4 | 5 | 2 | 3 | 0 |
+| M3 | no | 4 | 6 | 0 | 6 | 0 |
+| T1 | yes | 3 | 6 | 4 | 2 | 0 |
+| T2 | no | 6 | 8 | 6 | 0 | 1 |
+| T3 | yes | 4 | 11 | 10 | 0 | 1 |
+
+Every useful node in this trial, and every useful node in the seed arm of the previous
+one, came from a run anchoring on narrow line ranges in source files. Every run that cited
+whole files produced nothing. That correlation is **not an independent measurement**: the
+rubric requires a citation that resolves to what it describes, and a whole-file citation
+cannot, so "narrow" and "useful" are partly the same judgement made twice. It is reported
+because it is the only regularity in the data, not because it is evidence of a cause.
+
+### The finding that is independent, and larger than either trial
+
+**The planner returns the repository's stated objective instead of the one it was given,
+and it does this at the seed commit too.**
+
+M3 was given *"A planning run sometimes exhausts its research budget before the model
+answers."* and returned **"Make tag-two better at achieving its purpose."** T2 was given
+*"Increase the proportion of proposed tasks that carry a line-level citation."* and
+returned the same sentence. Both at `e1e580e`, whose README contains that objective under
+*First dogfood objective* — and which has no experiment log, no durable graph and no
+analysis of any run.
+
+Runs 22–41 recorded two such substitutions and attributed them to the accumulated prose at
+HEAD. That attribution was wrong. Four substitutions now, in both states, and the only
+thing the two states share is a README that states an objective. **Any repository that
+writes down what it is for can overwrite the objective a run was given.**
+
+Alongside it, a plainer result about form. Every objective in this project that was not
+already phrased as a goal has been rewritten by the model: six of six node titles in runs
+22–41, and three of three declarative sentences here. The two objectives in this trial
+that survived intact, T1 and T3, are both imperatives. This is a confound in arm M's
+design and it is stated as one: arm M's objectives are observations, arm T's are goals, so
+"names a failure" and "is not phrased as a goal" were varied together. The drift column
+tracks the grammar, not the arm.
+
+### What runs 22–47 leave standing
+
+- Bounded objectives are not the lever. Refuted at n=20.
+- Objectives drawn from graph nodes do not work at all: node titles are not objectives.
+- A failure with a discoverable mechanism is not the lever either. Refuted at n=6, with
+  two of three such objectives producing the shape the broad objective produces.
+- The one objective that has ever produced useful decomposition repeatedly is
+  *"Reduce the chance that a planning run produces no usable output."* — four graphs, six
+  useful nodes. On this trial's evidence, that is a fact about that objective, not about
+  any class it belongs to. Nothing yet explains it.
+- An objective is not reliably what the caller supplied. It can be rewritten into a goal,
+  or replaced by whatever objective the repository writes down.
+
+### What this earns the right to change
+
+Nothing in the source. Two trials, twenty-six runs and $0.15253 have refuted three
+successive explanations of decomposition quality and produced no supported one. Building
+anything on the last of them would be building on a refutation.
+
+The one candidate a future run could earn: `tag observe` reports which citations name
+unread files but says nothing about whether the objective in the graph is the objective
+the run was given. That has now been checked by hand in twenty-six runs, and the check
+found four substitutions that the graph itself renders as though they were the user's
+words. That is the same shape of need `observe` was built for, and it should be built when
+a run needs it, not because this paragraph suggests it.
