@@ -87,5 +87,49 @@
       "at": "2026-09-15T20:12:57.630Z",
       "outcome": "Worked 2026-09-15 (epistemic/control trial, runs 42 to 84). A third durable-state channel was tested: a mechanical report of what the previous run did, produced by tag observe, plus that run's answer, supplied as a user message. Measured across 43 runs replaying six historical commits under two planning primitives. Supplied before any investigation, 11 of 12 runs answered in one request, opened no file, and produced citations of which every one named a file the run had not read. Gated behind a first read, as the durable graph is, 8 of 17 runs still opened no file. Runs given no report at all read 33 files across 6 runs, against 10 files across 10 gated runs. ESTABLISHED: an answer-shaped supply suppresses investigation whether it arrives before or after the first read, and this now holds for node bodies (runs 12, 13), for a graph read as a tracked file (run 18), and for a run report. The same 43 runs compared the shipped planner's decomposition instructions against an alternative asking for established/uncertain/contradicted/worth-investigating plus one bounded next operation. Scored against what the external steward actually did next at each of the six moments, the alternative scored 2 of a possible 12 and the shipped planner scored 2; the alternative named 1 of 6 target discrepancies and the shipped planner 0; the alternative's one success at DP2 paraphrased a paragraph present in the README it read at that commit. At DP3 the answer was written in notes/steward-log.md at that commit and no run in any arm opened that file. REFUTED: asking for an epistemic state and a next-operation choice instead of a task list does not improve which discrepancy is noticed. Evidence: examples/epistemic-control-trial/."
     }
+  ],
+  "inputs": [
+    {
+      "at": "2026-09-15T21:00:56.556Z",
+      "from": "steward",
+      "kind": "observation",
+      "text": "this keeps proposing work we've already done"
+    },
+    {
+      "at": "2026-09-15T21:05:50.164Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Checked 2026-09-15 in one bounded request ($0.00084). All 3 nodes of this durable graph are reported by its own recorded outcomes as already done or refuted, each with a verbatim quote: investigate-tool-usage (run 9 called history; a directive CAN produce a tool call, unreliably), enhance-evidence-validation (citations are already checked against the transcript and offending graphs rejected), explore-supply-mechanism (a third durable-state channel was tested in the epistemic/control trial). This graph proposes no unworked task. Also checked: run 86's fresh graph, 4 of 6 firmly stale; run 85's control graph, 1 of 5."
+    },
+    {
+      "at": "2026-09-15T21:08:20.403Z",
+      "from": "steward",
+      "kind": "intent",
+      "text": "TAG's purpose includes keeping human intent in control of AI execution. Human involvement is not scaffolding to be progressively eliminated. What should shrink is unnecessary human cognitive labour — re-explaining context, remembering what happened, diagnosing mechanical details an agent could investigate, carrying conclusions between runs — not human judgement, intent or redirection."
+    },
+    {
+      "at": "2026-09-15T21:10:58.970Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Checked 2026-09-15, runs 85 to 88. Fresh graphs for the standing objective are mostly work the outcomes already report: run 85 (no input supplied) 1 of 5 flagged, run 86 (steward observation supplied) 5 of 6, run 87 4 of 5, run 88 3 of 5. Run 87's only unflagged node cites the steward observation and the check itself in its reason, so durable input reached a stateless run and shaped it. Supplying the observation did not stop the planner reproposing flagged work; test-bounded-objectives was proposed in 86 and again in 87, contradicted by a verbatim quote both times."
+    },
+    {
+      "at": "2026-09-15T21:10:59.046Z",
+      "from": "steward",
+      "kind": "correction",
+      "text": "A verified quote proves the sentence exists in an outcome, not that it supports the finding. On run 88 two of three done verdicts quote 'ESTABLISHED: twenty runs of work improved research completeness...' which reports that mirroring happens, not that reducing it was done; on run 85 implement-outcome-checks was flagged using the citation-guard outcome, which is a different check. Treat a quoted verdict as a pointer for a human to adjudicate in seconds, not as a decision. Do not build a gate on top of it."
+    },
+    {
+      "at": "2026-09-15T21:14:21.687Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Swept 2026-09-15 across 14 archived graphs for $0.00738, each checked only against the outcomes that existed when it ran. Runs handed durable outcomes: 24 of 47 proposed nodes are reported done or refuted by the record they were given (11 graphs). Runs of the same era not handed them: 4 of 14 (3 graphs). CONFOUNDED, not established: the control graphs planned against a different commit, n=3, and the check itself varies by about one node per graph between identical calls. What is firm is the supplied arm's own number — roughly half of everything the planner proposes, while holding the record in its input, is work that record already reports."
+    },
+    {
+      "at": "2026-09-15T21:14:21.761Z",
+      "from": "steward",
+      "kind": "decision",
+      "text": "Not adopting run 88's graph over this one. Both are stale: this graph is 3 of 3 and run 88 is 2 to 3 of 5. Replacing a documented-stale graph with another stale graph loses the documentation and gains nothing. The durable graph stays as it is, exhausted and known to be exhausted, until something produces proposals the record does not already answer. This is a product judgement, not a measurement."
+    }
   ]
 }

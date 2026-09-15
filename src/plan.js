@@ -3,9 +3,8 @@ import { join, relative } from 'node:path';
 import { repositoryTools, tools } from './repository.js';
 import { validateGraph, renderGraph } from './graph.js';
 import { cited } from './observe.js';
+import { MODEL, request, affordable } from './model.js';
 
-const MODEL = 'deepseek/deepseek-chat-v3-0324';
-const API = 'https://openrouter.ai/api/v1';
 // Lowered from 10 to pay for the larger per-request budget below. Bytes have been the binding
 // constraint in every run; no run has ever used more than five requests.
 const MAX_REQUESTS = 8;
@@ -45,17 +44,6 @@ prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":
 You have at most 8 model requests including your final answer. Batch tool calls when useful.
 Do not claim to have inspected files you have not read.`;
 
-async function request(path, options, fetchImpl) {
-  let response;
-  try {
-    response = await fetchImpl(`${API}${path}`, { ...options, signal: AbortSignal.timeout(120_000) });
-  } catch (error) {
-    throw new Error(`OpenRouter unavailable (${error.cause?.code ?? error.name}). No retry was made.`);
-  }
-  if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}. No retry was made.`);
-  return response.json();
-}
-
 // A recorded outcome that the planner never reads changes nothing: run 9 proposed the very node
 // whose outcome said it had just been worked, because it never opened the graph. Instructions do
 // not reliably produce a tool call, so the durable state is supplied rather than offered.
@@ -69,11 +57,13 @@ async function priorGraph(path) {
   }
   const graph = JSON.parse(text);
   validateGraph(graph, graph?.objective);
-  // Only the outcomes. Handed whole nodes, two runs returned them: same ids, same reasons, same
-  // evidence strings, copied line numbers, and one file read between them. The node bodies are
-  // answer-shaped and get copied; the outcomes are the part that exists nowhere else.
-  return (graph.outcomes ?? []).map(item =>
-    `- ${item.title} (recorded ${item.at}): ${item.outcome}`);
+  // Only the outcomes and the input. Handed whole nodes, two runs returned them: same ids, same
+  // reasons, same evidence strings, copied line numbers, and one file read between them. The node
+  // bodies are answer-shaped and get copied; these two are the part that exists nowhere else.
+  return {
+    outcomes: (graph.outcomes ?? []).map(item => `- ${item.title} (recorded ${item.at}): ${item.outcome}`),
+    inputs: (graph.inputs ?? []).map(item => `- ${item.kind} from ${item.from} (${item.at}): ${item.text}`),
+  };
 }
 
 export async function plan(objective, directory, {
@@ -83,8 +73,13 @@ export async function plan(objective, directory, {
 } = {}) {
   if (typeof objective !== 'string' || !objective.trim()) throw new Error('An objective is required.');
   if (!apiKey) throw new Error('Set OPENROUTER_API_KEY before planning.');
-  const outcomes = await priorGraph(graphPath);
-  const prior = outcomes?.length ? outcomes : null;
+  const durableState = await priorGraph(graphPath);
+  const prior = durableState?.outcomes.length ? durableState.outcomes : null;
+  // Stored input that nothing ever reads changes nothing, which is the failure `record` already
+  // demonstrated for outcomes: run 9 reproposed the node whose outcome refuted it. Input is
+  // supplied on the same channel and under the same gate, and labelled as what it is rather than
+  // as work already performed.
+  const said = durableState?.inputs.length ? durableState.inputs : null;
   const durable = relative(directory, graphPath);
   const investigate = await repositoryTools(directory, {
     exclude: [durable, durable.replace(/\.json$/, '.html')],
@@ -101,21 +96,12 @@ export async function plan(objective, directory, {
   const attempt = { model: MODEL, createdAt: new Date().toISOString(), requests: 0, costUsd: 0, investigation: [] };
   let keep = false;
   try {
-    const { data } = await request('/models', {}, fetchImpl);
-    const model = data?.find(item => item.id === MODEL);
-    const promptPrice = Number(model?.pricing?.prompt);
-    const completionPrice = Number(model?.pricing?.completion);
-    // Deliberately conservative caps, not a general-purpose cost reservation system.
-    if (!model || !Number.isFinite(promptPrice) || promptPrice < 0 || promptPrice > 0.5 / 1e6
-      || !Number.isFinite(completionPrice) || completionPrice < 0 || completionPrice > 1.5 / 1e6
-      || Number(model.pricing.request ?? 0) !== 0) {
-      throw new Error('Model unavailable or pricing exceeds the seed’s budget caps. Human review required.');
-    }
+    await affordable(fetchImpl);
     const messages = [
       { role: 'system', content: instructions },
       { role: 'user', content: objective },
     ];
-    attempt.priorGraph = prior ? graphPath : null;
+    attempt.priorGraph = prior || said ? graphPath : null;
     let supplied = false;
     const investigation = attempt.investigation;
     const researched = () => investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result));
@@ -125,9 +111,10 @@ export async function plan(objective, directory, {
       // of its four nodes verbatim, read nothing, and cited files it had never opened. The
       // durable state is real input, so it is withheld until the repository has actually been
       // investigated, and never allowed to stand in for investigating it.
-      if (prior && !supplied && researched()) {
+      if ((prior || said) && !supplied && researched()) {
         supplied = true;
-        messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished. These outcomes are not repository evidence: do not cite them, or any path mentioned in them, unless you have read that file yourself in this investigation.` });
+        if (said) messages.push({ role: 'user', content: `Said to this project from outside the graph, kept in the words it arrived in and labelled with the kind its author gave it:\n${said.join('\n')}\nAn objective, priority, constraint or correction from a human is authoritative: respect it, and if repository evidence contradicts it, report the conflict rather than overriding it. An observation, belief or question is a claim to check against the repository, not an established result. None of this is repository evidence: do not cite it, or any path mentioned in it, unless you have read that file yourself in this investigation.` });
+        if (prior) messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished. These outcomes are not repository evidence: do not cite them, or any path mentioned in them, unless you have read that file yourself in this investigation.` });
       }
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,

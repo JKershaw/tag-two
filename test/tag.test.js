@@ -9,6 +9,8 @@ import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
 import { adopt } from '../src/adopt.js';
+import { input } from '../src/input.js';
+import { check, report } from '../src/check.js';
 import { observe, describe } from '../src/observe.js';
 
 const objective = 'Improve the project';
@@ -404,6 +406,38 @@ test('the planner is handed the recorded outcomes, and nothing else from the dur
   assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
 });
 
+test('the planner is handed durable input as a claim, not as work already performed', async t => {
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  const durable = planned();
+  durable.inputs = [{ at: '2026-09-18T00:00:00.000Z', from: 'human', kind: 'observation', text: "this keeps proposing work we've already done" }];
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
+
+  const seen = [];
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    const messages = JSON.parse(options.body).messages;
+    if (calls === 2) {
+      assert.equal(messages.length, 2, 'input is withheld until the repository is investigated');
+      return toolAnswer();
+    }
+    seen.push(...messages.slice(2).map(item => item.content).filter(item => typeof item === 'string'));
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  const said = seen.find(item => item.startsWith('Said to this project'));
+  assert.ok(said, 'the input reaches the model');
+  assert.match(said, /- observation from human \(2026-09-18T00:00:00\.000Z\): this keeps proposing work we've already done/);
+  // The failure that produced this: forced through `record`, a human observation was supplied as
+  // "Work already performed ... what each attempt actually did".
+  assert.match(said, /a claim to check against the repository, not an established result/);
+  assert.doesNotMatch(said, /^Work already performed/);
+  assert.equal(seen.filter(item => item.startsWith('Work already performed')).length, 0, 'there are no outcomes here to supply');
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).run.priorGraph,
+    join(directory, 'graph', 'graph.json'));
+});
+
 test('a repository with no durable graph is planned exactly as before, and a corrupt one stops the run', async t => {
   const directory = await fixture(t);
   let prompt;
@@ -466,7 +500,7 @@ test('adopt replaces a durable graph and carries every recorded outcome across',
     { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
   ] };
   const result = await adopt(await graphFile(t, replanned), durablePath);
-  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2 });
+  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2, inputs: 0 });
 
   const after = JSON.parse(await readFile(durablePath, 'utf8'));
   assert.deepEqual(after.nodes.map(node => node.id), ['something-else']);
@@ -479,6 +513,49 @@ test('adopt replaces a durable graph and carries every recorded outcome across',
   const html = await readFile(result.htmlPath, 'utf8');
   assert.match(html, /no longer contains/, 'outcomes outlive the nodes that proposed them');
   assert.match(html, /Worked and refuted\./);
+});
+
+test('input keeps what arrived from outside the graph without relabelling it as work', async t => {
+  const path = await graphFile(t);
+  const result = await input(path, 'human', 'observation', "  this keeps proposing work we've already done  ",
+    { now: () => '2026-09-18T00:00:00.000Z' });
+  assert.deepEqual(result, { htmlPath: path.replace(/json$/, 'html'), inputs: 1 });
+
+  const after = JSON.parse(await readFile(path, 'utf8'));
+  assert.deepEqual(after.inputs, [{ at: '2026-09-18T00:00:00.000Z', from: 'human', kind: 'observation',
+    text: "this keeps proposing work we've already done" }]);
+  // The failure this exists for: pushed through `record`, the same sentence needed a node id it is
+  // not about, marked that node worked, and reached the planner as work already performed.
+  assert.equal(after.outcomes, undefined);
+  const html = await readFile(result.htmlPath, 'utf8');
+  assert.match(html, /2 tasks · 1 ready for human selection · 1 dependency-blocked · 0 worked/);
+  assert.match(html, /observation<\/strong> from human/);
+  assert.match(html, /already done/);
+  assert.doesNotMatch(html, /Worked — see recorded outcomes/);
+});
+
+test('input refuses an empty source, kind or text and an invalid graph', async t => {
+  const path = await graphFile(t);
+  const before = await readFile(path, 'utf8');
+  await assert.rejects(input(path, ' ', 'observation', 'text'), /source is required/);
+  await assert.rejects(input(path, 'human', '', 'text'), /kind is required/);
+  await assert.rejects(input(path, 'human', 'observation', '  '), /text is required/);
+  await assert.rejects(input(path.replace(/json$/, 'txt'), 'human', 'observation', 'text'), /graph\.json/);
+  assert.equal(await readFile(path, 'utf8'), before);
+  await assert.rejects(input(await graphFile(t, { ...planned(), inputs: [{ at: 'now', kind: 'observation' }] }),
+    'human', 'observation', 'text'), /\{at, from, kind, text\}/);
+});
+
+test('adopt carries input across a replanning', async t => {
+  const durablePath = await graphFile(t);
+  await input(durablePath, 'human', 'constraint', 'Do not build execution yet.', { now: () => '2026-09-18T00:00:00.000Z' });
+  const replanned = { ...planned(), nodes: [
+    { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
+  ] };
+  const result = await adopt(await graphFile(t, replanned), durablePath);
+  assert.equal(result.inputs, 1);
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.inputs.map(item => item.text), ['Do not build execution yet.']);
 });
 
 test('adopt refuses a different objective, a bad path and an invalid graph, and changes nothing', async t => {
@@ -498,8 +575,69 @@ test('adopt into a repository with no durable graph yet just writes one', async 
   const source = await graphFile(t);
   const target = join(source, '..', 'fresh.json');
   const result = await adopt(source, target);
-  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0 });
+  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0, inputs: 0 });
   assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
+});
+
+const worked = { node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z',
+  outcome: 'Worked 2026-09-16. REFUTED: a system-instruction directive does not cause a tool call.' };
+
+test('check reports which proposed tasks the outcomes already report, and verifies every quote', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const proposedPath = await graphFile(t, { ...planned(), nodes: [
+    { id: 'investigate', title: 'Investigate usefulness', reason: 'Again.', evidence: ['README.md:1 — x'], dependsOn: [] },
+    { id: 'demonstrate', title: 'Demonstrate improvement', reason: 'New.', evidence: ['README.md:1 — x'], dependsOn: [] },
+  ] });
+  let sent;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    sent = JSON.parse(options.body);
+    return answer(JSON.stringify({ findings: [
+      { node: 'investigate', status: 'done', quote: 'REFUTED: a system-instruction directive does not cause a tool call.', why: 'An outcome refutes it.' },
+      { node: 'demonstrate', status: 'open', quote: '', why: 'No outcome mentions it.' },
+    ] }));
+  };
+  const result = await check(proposedPath, durablePath, { apiKey: 'test-only', fetchImpl });
+  assert.equal(sent.tools, undefined, 'checking is one bounded question, not an investigation');
+  assert.match(sent.messages[1].content, /Recorded outcomes:/);
+  assert.match(sent.messages[2].content, /- investigate: Investigate usefulness — Again\./);
+  assert.deepEqual(result.findings.map(item => [item.node, item.status]), [['investigate', 'done'], ['demonstrate', 'open']]);
+  assert.deepEqual(result.missing, []);
+  assert.match(report(result), /1 already done or refuted · 1 not reported by any outcome · 0 claimed done/);
+});
+
+test('check will not accept a quote that does not appear in the outcomes', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const proposedPath = await graphFile(t, { ...planned(), nodes: [
+    { id: 'investigate', title: 'Investigate usefulness', reason: 'Again.', evidence: ['README.md:1 — x'], dependsOn: [] },
+  ] });
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    return answer(JSON.stringify({ findings: [
+      { node: 'investigate', status: 'done', quote: 'An outcome that says this was never recorded anywhere.', why: 'Invented.' },
+      { node: 'not-a-node', status: 'done', quote: 'x', why: 'Not asked about.' },
+    ] }));
+  };
+  const result = await check(proposedPath, durablePath, { apiKey: 'test-only', fetchImpl });
+  // The same discipline as the citation guard: an unsupported claim is reported, not repaired
+  // and not silently dropped.
+  assert.deepEqual(result.findings, [{ node: 'investigate', status: 'unverified', why: 'Invented.', quote: '' }]);
+  assert.match(report(result), /1 claimed done without a quote that appears in the outcomes/);
+});
+
+test('check refuses a durable graph with no outcomes, a bad answer and a missing key', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const empty = await graphFile(t);
+  let calls = 0;
+  const fetchImpl = async () => (++calls === 1 ? catalog() : answer('not json at all'));
+  await assert.rejects(check(empty, empty, { apiKey: 'test-only', fetchImpl: async () => catalog() }), /records no outcomes/);
+  await assert.rejects(check(empty, durablePath, { apiKey: 'test-only', fetchImpl }), /Invalid check answer/);
+  await assert.rejects(check(empty, durablePath, { apiKey: '', fetchImpl }), /OPENROUTER_API_KEY/);
+  calls = 0;
+  const notAList = async () => (++calls === 1 ? catalog() : answer(JSON.stringify({ findings: 'lots' })));
+  await assert.rejects(check(empty, durablePath, { apiKey: 'test-only', fetchImpl: notAList }), /findings array/);
 });
 
 const investigated = (path, result) => ({ tool: 'read_file', arguments: { path }, result });

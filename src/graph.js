@@ -43,6 +43,17 @@ export function validateGraph(graph, objective) {
       && nonempty(item.at) && nonempty(item.outcome)))) {
     throw new Error('Recorded outcomes must be a list of {node, title, at, outcome}.');
   }
+  // Input arrived from outside the graph — a human sentence, an agent's observation — and had
+  // nowhere to go. The only ingest path was `tag record`, which demands a node id and labels
+  // what it stores as work already performed: one human observation, forced through it, made the
+  // graph report "0 ready · 3 worked" and relabelled an unverified claim as an established result.
+  // So input is kept separately, in the words it arrived in, with the kind its author gave it.
+  // `kind` is the author's own label, not a taxonomy: nothing here interprets or checks it.
+  if (graph.inputs !== undefined && (!Array.isArray(graph.inputs)
+    || !graph.inputs.every(item => item && nonempty(item.at) && nonempty(item.from)
+      && nonempty(item.kind) && nonempty(item.text)))) {
+    throw new Error('Inputs must be a list of {at, from, kind, text}.');
+  }
   // The asked objective is authoritative; the echo only had to agree with it. But the echo
   // is evidence: across forty-one runs the model has rewritten a supplied objective seven
   // times and twice replaced it with this repository's own standing one, and every one of
@@ -80,6 +91,7 @@ article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}ar
 <h1>${escape(graph.objective)}</h1>
 <p>${graph.nodes.length} tasks · ${ready} ready for human selection · ${graph.nodes.length - ready - worked} dependency-blocked · ${worked} worked</p>
 <p>${recorded.length ? 'Outcomes below were recorded by a human after work was done outside tag-two.' : 'No tasks have been executed.'} “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
+${(graph.inputs ?? []).length ? `<section aria-label="Input"><h2>Input received from outside the graph</h2><p>Kept in the words it arrived in. The kind is what its author called it: an observation or a belief is a claim to be checked, not an established result, and nothing here has judged it.</p><ul>${graph.inputs.map(item => `<li><strong>${escape(item.kind)}</strong> from ${escape(item.from)} (${escape(item.at)}) — ${escape(item.text)}</li>`).join('')}</ul></section>` : ''}
 <section aria-label="Research"><h2>What the agent learned</h2><p>${escape(graph.summary)}</p></section>
 <nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul>${graph.nodes.map(node =>
     `<li><a href="#${escape(node.id)}">${escape(node.title)}</a>${outcomesFor(node.id).length ? ' · worked' : node.dependsOn.length ? ` ← depends on ${node.dependsOn.map(id => `<a href="#${escape(id)}">${escape(nodes.get(id).title)}</a>`).join(', ')}` : ' · ready'}</li>`).join('')}</ul></nav>
