@@ -6,6 +6,21 @@ import { readFile } from 'node:fs/promises';
 // files they never read. Nothing here calls a model; it only reports what a run's record contains.
 export const cited = item => String(item).trim().split(/[\s:]/, 1)[0];
 
+// The objective a run returned, read out of its own answer without repairing anything. A
+// rejected run keeps its raw answer and nothing else records what objective it claimed.
+function returnedObjective(record, graph) {
+  if (graph) return graph.objectiveReturned ?? graph.objective;
+  const answer = record.run?.answer;
+  if (typeof answer !== 'string') return null;
+  const fenced = answer.trim().match(/^```[a-z]*\s*\n([\s\S]*?)\n?```$/i);
+  try {
+    const parsed = JSON.parse(fenced ? fenced[1] : answer);
+    return typeof parsed?.objective === 'string' ? parsed.objective : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function observe(runPath) {
   let record;
   try {
@@ -36,8 +51,14 @@ export async function observe(runPath) {
       if (!read.has(cited(item))) unread.push({ node: node.id, evidence: item });
     }
   }
+  const asked = record.objective ?? graph?.objective ?? null;
+  const returned = returnedObjective(record, graph);
   return {
     outcome: graph ? 'graph' : 'failed', failure: record.failure ?? null,
+    objectiveAsked: asked, objectiveReturned: returned,
+    // A plain string comparison, deliberately. No model judges whether two objectives mean
+    // the same thing; the point is to make the difference visible, not to rule on it.
+    objectiveSubstituted: returned !== null && asked !== null && returned.trim() !== asked.trim(),
     answerPreserved: graph ? null : typeof run.answer === 'string',
     model: run.model, requests: run.requests, costUsd: run.costUsd,
     priorGraph: run.priorGraph ?? null,
@@ -58,6 +79,11 @@ export function describe(report) {
     `Tool calls: ${Object.entries(report.calls).map(([name, count]) => `${name}×${count}`).join(', ') || 'none'}`
       + `${report.unusedTools.length ? ` · never called: ${report.unusedTools.join(', ')}` : ''}`,
     `Files read: ${Object.entries(report.filesRead).map(([path, how]) => `${path} (${how})`).join(', ') || 'none'}`,
+    report.objectiveReturned === null
+      ? `Objective asked: ${report.objectiveAsked} · the run returned no readable objective.`
+      : report.objectiveSubstituted
+        ? `OBJECTIVE SUBSTITUTED.\n  asked:    ${report.objectiveAsked}\n  returned: ${report.objectiveReturned}`
+        : `Objective returned unchanged: ${report.objectiveAsked}`,
   ];
   if (report.outcome === 'graph') {
     lines.push(report.evidenceCitingUnreadFiles.length

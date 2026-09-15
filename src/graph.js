@@ -43,7 +43,13 @@ export function validateGraph(graph, objective) {
       && nonempty(item.at) && nonempty(item.outcome)))) {
     throw new Error('Recorded outcomes must be a list of {node, title, at, outcome}.');
   }
-  // The asked objective is authoritative; the echo only had to agree with it.
+  // The asked objective is authoritative; the echo only had to agree with it. But the echo
+  // is evidence: across forty-one runs the model has rewritten a supplied objective seven
+  // times and twice replaced it with this repository's own standing one, and every one of
+  // those was found by a human comparing two strings by hand. Overwriting the echo here
+  // destroyed the only record of it, so an echo that is not byte-identical is kept beside
+  // the asked objective. This stores the difference; it does not judge or correct it.
+  if (graph.objective !== objective) graph.objectiveReturned = graph.objective;
   graph.objective = objective;
   return graph;
 }

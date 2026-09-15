@@ -1,0 +1,27 @@
+{
+  "decisionPoint": "DP2",
+  "arm": "Ag",
+  "replicate": 1,
+  "commit": "216b7d1",
+  "objective": "Make tag-two better at achieving its purpose.",
+  "observationSupplied": true,
+  "observationGated": true,
+  "observationFrom": "examples/fifth-dogfood/graph.json",
+  "durableSupply": "none",
+  "exclude": [],
+  "model": "deepseek/deepseek-chat-v3-0324",
+  "createdAt": "2026-09-15T20:04:40.501Z",
+  "requests": 2,
+  "costUsd": 0.000531,
+  "investigation": [
+    {
+      "tool": "list_files",
+      "arguments": {
+        "offset": 0
+      },
+      "result": "{\"files\":[\".gitignore\",\"LICENSE\",\"README.md\",\"bin/tag.js\",\"examples/first-dogfood/graph.html\",\"examples/first-dogfood/graph.json\",\"examples/fourth-dogfood/graph.html\",\"examples/fourth-dogfood/graph.json\",\"examples/second-dogfood/graph.html\",\"examples/second-dogfood/graph.json\",\"examples/third-dogfood/failed-run.json\",\"package.json\",\"src/graph.js\",\"src/plan.js\",\"src/repository.js\",\"test/tag.test.js\"],\"total\":16,\"nextOffset\":null}"
+    }
+  ],
+  "answer": null,
+  "failure": "No answer within the request limit."
+}

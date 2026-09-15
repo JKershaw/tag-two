@@ -1,0 +1,18 @@
+{
+  "decisionPoint": "DP3",
+  "arm": "A",
+  "replicate": 1,
+  "commit": "e2e94e5",
+  "objective": "Make tag-two better at achieving its purpose.",
+  "observationSupplied": true,
+  "observationFrom": "examples/eighth-dogfood/failed-run.json",
+  "durableSupply": "none",
+  "exclude": [],
+  "model": "deepseek/deepseek-chat-v3-0324",
+  "createdAt": "2026-09-15T20:00:20.171Z",
+  "requests": 1,
+  "costUsd": 0.00096456,
+  "investigation": [],
+  "answer": "```json\n{\n  \"objective\": \"Make tag-two better at achieving its purpose\",\n  \"summary\": \"The repository describes tag-two as a tiny experiment in persistent, agent-assisted problem solving. The core idea is to represent evolving understanding as a persistent graph, allowing agents to help investigate and evolve it. The current implementation focuses on generating a small task graph from an objective, but the dogfood runs reveal gaps in research completeness and task decomposition quality. The agent tends to mirror the most salient text in its context rather than producing independent analysis. The system now guarantees complete research by delivering whole files, but the mirroring behavior persists. The latest run proposed tasks to improve research quality and tool usage, but the decomposition still reflects human-written critique rather than independent analysis.\",\n  \"nodes\": [\n    {\n      \"id\": \"enhance-research\",\n      \"title\": \"Enhance research quality to avoid mirroring\",\n      \"reason\": \"The agent's tendency to mirror context rather than analyze independently undermines the system's purpose. Improving research quality is foundational to meaningful decomposition.\",\n      \"evidence\": [\n        \"README.md:156-160 — The agent proposed improving research depth in the same request it declined to read the rest of the README.\",\n        \"src/repository.js:78-95 — Implementation of whole-file reads to avoid partial research.\"\n      ],\n      \"dependsOn\": []\n    },\n    {\n      \"id\": \"verify-gaps\",\n      \"title\": \"Verify gaps before proposing tasks\",\n      \"reason\": \"Proposing tasks without verifying their necessity leads to redundant or irrelevant work. Ensuring tasks address real gaps improves the graph's usefulness.\",\n      \"evidence\": [\n        \"README.md:253-259 — The agent cited the finished implementation of whole-file reads as a reason to propose the same work.\",\n        \"test/tag.test.js:106-117 — Tests confirm whole-file reads are implemented.\"\n      ],\n      \"dependsOn\": [\n        \"enhance-research\"\n      ]\n    },\n    {\n      \"id\": \"expand-tool-usage\",\n      \"title\": \"Expand tool usage beyond file reading\",\n      \"reason\": \"The agent has never used `search` or `history`, limiting its ability to investigate context deeply. Expanding tool usage can uncover more relevant evidence.\",\n      \"evidence\": [\n        \"README.md:269-271 — The agent has never used `search` or `history` in any run.\",\n        \"src/repository.js:96-117 — Implementation of `search` and `history` tools.\"\n      ],\n      \"dependsOn\": [\n        \"enhance-research\"\n      ]\n    },\n    {\n      \"id\": \"clarify-summary\",\n      \"title\": \"Clarify the research summary in the graph\",\n      \"reason\": \"A clear summary distinguishes verified behavior from unverified claims, helping humans assess the graph's validity.\",\n      \"evidence\": [\n        \"README.md:204-211 — The graph's summary often mirrors human-written critique rather than synthesizing independent analysis.\",\n        \"src/graph.js:55-56 — HTML rendering includes the research summary.\"\n      ],\n      \"dependsOn\": [\n        \"verify-gaps\"\n      ]\n    }\n  ]\n}\n```",
+  "failure": null
+}

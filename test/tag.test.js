@@ -622,3 +622,39 @@ test('the durable graph is not also offered to the planner as a file to read', a
   assert.match(listed, /graph\/notes\.md/, 'other files in the same directory still are');
   assert.match(denied, /Choose a listed tracked file|Tool unavailable/, 'and it cannot be read by name');
 });
+
+test('a rewritten objective echo is kept beside the asked one and reported', () => {
+  const drifted = { ...graph(), objective: 'Improve the project for real' };
+  assert.throws(() => validateGraph(drifted, objective), /Expected the original objective/);
+  const punctuated = { ...graph(), objective: `${objective}.` };
+  const validated = validateGraph(punctuated, objective);
+  assert.equal(validated.objective, objective);
+  assert.equal(validated.objectiveReturned, `${objective}.`);
+  const unchanged = validateGraph(graph(), objective);
+  assert.equal(unchanged.objectiveReturned, undefined);
+});
+
+test('observe reports an objective the run replaced with a different one', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'tag-objective-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const failed = join(directory, 'failed-run.json');
+  await writeFile(failed, JSON.stringify({
+    objective: 'Enforce evidence validation.',
+    failure: 'Invalid planner graph.',
+    run: {
+      model: 'm', requests: 2, costUsd: 0, investigation: [{ tool: 'read_file', arguments: { path: 'README.md' }, result: '1: text\n[Lines 1-1 of 1. End of README.md; the whole file from line 1 has been shown.]' }],
+      answer: '```json\n{"objective":"Make tag-two better at achieving its purpose.","summary":"s","nodes":[]}\n```',
+    },
+  }));
+  const report = await observe(failed);
+  assert.equal(report.objectiveAsked, 'Enforce evidence validation.');
+  assert.equal(report.objectiveReturned, 'Make tag-two better at achieving its purpose.');
+  assert.equal(report.objectiveSubstituted, true);
+  assert.match(describe(report), /OBJECTIVE SUBSTITUTED/);
+
+  const kept = join(directory, 'graph.json');
+  await writeFile(kept, JSON.stringify({ ...graph(), objectiveReturned: `${objective}.`, run: { model: 'm', requests: 1, costUsd: 0, investigation: [] } }));
+  const graphReport = await observe(kept);
+  assert.equal(graphReport.objectiveSubstituted, true);
+  assert.equal(graphReport.objectiveReturned, `${objective}.`);
+});

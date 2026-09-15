@@ -169,3 +169,85 @@ I did not change any source file during the trial, and I am not changing one now
 consequence of this result — that the useful objective is one with a locus in code, and
 that the graph's nodes do not supply one — is an architectural claim resting on four
 graphs at one commit. It needs its own experiment before it needs an implementation.
+
+## The epistemic/control trial, runs 42–84 (2026-09-15)
+
+This is the first trial in which the thing being tested was my own process rather than
+tag-two's. The claim handed to me was that the difference between what tag-two does and
+what I do is real and transferable: that an explicit epistemic state and an explicit
+next-operation choice would out-decide direct decomposition. I was asked not to assume
+it, and it did not survive.
+
+### Operations I performed that tag-two cannot
+
+Kept as architectural evidence, not as a feature list.
+
+- **Chose the historical decision points.** Six moments out of forty-one runs where a
+  run had produced evidence, the answer is known, and the answer can be withheld. The
+  selection is the experiment; nothing in tag-two could have made it.
+- **Separated world state from answer state.** For each point I had to find the commit
+  the run executed against rather than the commit that records the assessment of it.
+  Every one of those pairs is two adjacent commits an hour apart, and choosing the wrong
+  one would have handed the model the answer without my noticing.
+- **Declared the contamination before scoring, and then found more of it afterwards.** I
+  flagged DP3 and DP6 in advance. I did not flag DP2 — and DP2 produced the trial's only
+  positive result, which I then went looking to break, found the sentence it was
+  paraphrasing, and reported the finding as mirroring. That sequence — a result I wanted,
+  a check I ran anyway, a retraction — is the single operation in this trial that tag-two
+  has never performed in any form.
+- **Recognised my own control failure.** Eleven of my first twelve observation runs
+  answered without reading anything, which is a failure runs 11 and 13 had already
+  established and which the shipped planner already guards against. I had built an
+  experiment whose treatment reproduced a known artifact. I recorded it as a deviation,
+  kept the runs, and added gated arms rather than quietly replacing them.
+- **Distinguished an apparatus failure from an answer.** Five runs returned an empty
+  provider response. Re-running those is legitimate; re-running a run whose answer I
+  disliked is not. I wrote the rule down before using it, applied it to both arms, and
+  reported the cell that failed three times as null rather than as a zero.
+- **Decided the trial was over.** The pre-registered rule said stop, and the temptation
+  to add a seventh decision point or a richer version of the treatment was real and
+  specific: the DP2 asymmetry is 3–0 and 2–0 and would have looked like a finding.
+
+### What I got wrong
+
+**I supplied the observation the way I would have wanted it, not the way the evidence
+said to.** Runs 11 and 13 had already established that answer-shaped input suppresses
+investigation, and I supplied an answer-shaped input up front to both arms. The first
+twelve runs of this trial cost $0.05 to rediscover a result the repository already held
+— a result I had read that morning.
+
+**I expected the failure to be about output shape.** The hypothesis is about what the
+model is asked to produce. The trial's clearest finding is that both shapes fail in the
+same place: five of six discrepancies unnoticed, already-completed work proposed in
+every arm, the prose preferred to the code in every arm. The output shape changes which
+part of the prose gets copied and nothing else.
+
+**The sharpest thing in the trial is a file nobody opened.** DP3's answer is written in
+`notes/steward-log.md` — this file — at the commit in question. Six runs listed it.
+None read it. I have been writing the standing gaps down for thirty-odd runs on the
+assumption that durable prose is what the system is missing, and the one time the answer
+was in it, no arm in either primitive went to look.
+
+### What this changes about the division of labour
+
+Nothing was transferred to tag-two. Phase 2 was not entered, because Milestone A was not
+reached, and building the smallest durable distinction to preserve an advantage that
+does not exist would have been architecture without evidence — the failure mode the
+README warns about hardest.
+
+One thing was added, and it is instrumentation rather than capability: the objective a
+model returns is now kept beside the objective it was asked, and `tag observe` reports
+the difference mechanically. Forty-one runs of objective substitution were found by a
+human comparing two strings by hand, including two runs that replaced a supplied
+objective with this repository's own. That comparison is now automatic and makes no
+judgement about meaning; there is no equivalence check and no model involved in it.
+
+### Still external, unchanged
+
+Deciding when to run and with what objective; designing an experiment; choosing what
+evidence discriminates; forming and rejecting a hypothesis; recognising mirroring;
+judging a result; writing an outcome; and every line of code in this repository.
+
+The list has not shrunk in twenty-one runs. That is now a result rather than a status
+note: three consecutive trials have aimed at the input, the durable state and the output
+shape, and none of them moved it.
