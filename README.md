@@ -55,14 +55,49 @@ Outcomes are held on the graph rather than on the node, as
 ids and the fourteenth's have nothing in common — and an outcome is evidence about
 work that really happened, so it must outlive whichever node happened to propose it.
 
+Input that arrives from outside the graph — a human objective, observation, belief, question,
+priority, constraint, correction or decision, or an observation from a tool — goes in as itself:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js input graph/graph.json steward observation "this keeps proposing work we've already done"
+```
+
+`tag input` stores `{at, from, kind, text}` on the graph. It attaches to no node, marks nothing
+worked, decides nothing, runs nothing and calls no model, and `kind` is whatever its author called
+it — nothing here interprets or checks it. It exists because there was previously only one way to
+put anything into durable state, and that way was wrong for this: `tag record` demands a node id,
+so a human sentence had to be attached to a node it was not about, the rendering then reported
+"0 ready · 3 worked" when nobody had worked anything, and the planner was handed an unverified
+observation labelled as work already performed. The planner is now given stored input on the same
+gated channel as the outcomes, labelled as a claim to check or as an authoritative human direction.
+
+To find out which of a graph's proposals the record already answers:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js check .tag/graph.json graph/graph.json
+```
+
+`tag check` asks one bounded question in one model request, with no tools: for each proposed task,
+do the recorded outcomes already report it as done or refuted? A "done" finding must quote an
+outcome word for word, and the quote is looked up in the outcomes rather than trusted — an unfound
+quote is reported as unverified, not repaired and not dropped. It proposes nothing and changes
+nothing. Run against this repository's own durable graph it reported all three nodes already done,
+each with a verbatim quote, for $0.0008.
+
+It is a report and not a gate, deliberately. A verified quote proves the sentence exists, not that
+it supports the finding: two of three "done" verdicts on one run quoted a sentence reporting that
+mirroring happens, not that reducing it was done. Printing the quote turns that into a two-second
+human adjudication rather than a silent wrong answer. Findings are model-generated; only the
+quotes are verified, and only that they appear verbatim.
+
 When a later run produces a better graph for the same objective, adopt it:
 
 ```sh
 node /absolute/path/to/tag-two/bin/tag.js adopt .tag/graph.json graph/graph.json
 ```
 
-`adopt` replaces the durable graph wholesale and carries every recorded outcome
-across, refusing a graph that answers a different objective. Outcomes whose node no
+`adopt` replaces the durable graph wholesale and carries every recorded outcome and every
+recorded input across, refusing a graph that answers a different objective. Outcomes whose node no
 longer exists are kept and shown separately rather than discarded. The new graph's
 investigation transcript is left behind with the archived run and referenced by path,
 because a durable graph larger than one `read_file` call cannot be read by the planner
@@ -796,7 +831,25 @@ bounded objective naming a quantity with nowhere to look did not. The active ing
 is the objective's relationship to the code, not its width, and the accumulated prose in
 this repository outweighs both.
 
-Forty-three further runs then tested the strongest remaining explanation: that useful work
+Four further runs and eighteen checks then changed the question rather than the mechanism. Human
+intervention had been treated throughout as scaffolding to remove; it is now treated as a
+legitimate source of state, and what should shrink is unnecessary human cognitive labour rather
+than human judgement. One real steward observation — "this keeps proposing work we've already
+done" — was stored, supplied to the planner, and made the next graph worse on the very thing it
+named: four of six proposed tasks were work the recorded outcomes already report, against one of
+five in a pre-registered control run that was never told. The planner cannot answer a claim about
+its own output. `tag check` can, and reported this repository's whole durable graph exhausted, with
+quotes, for a tenth of a cent — agreeing with a human judgement written down before the mechanism
+existed. A later stateless run then cited "the steward's observation and the tag check" in its
+reasoning, so durable human input does reach a fresh agent and shape it. It does not correct it:
+three consecutive runs reproposed work the record in their own input reports as done, and across
+eleven archived runs handed that record, 24 of 47 proposed tasks were work it already answers.
+A recorded human intent was preserved and never violated, and also left no trace in behaviour and
+produced no conflict report against the README sentence that contradicts it. tag-two never once
+asked for a human judgement, including when its own graph became exhausted. `EXPERIMENTS.md` has
+the runs.
+
+Forty-three earlier runs had tested the strongest remaining explanation: that useful work
 has to be derived from an explicit epistemic state and an explicit choice of next
 operation rather than generated straight from a broad objective. Replayed against six
 moments in this repository's own history, with the later answer withheld, that primitive
