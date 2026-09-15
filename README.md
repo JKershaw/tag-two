@@ -280,6 +280,60 @@ what already exists — rather than research depth, documentation accuracy, outp
 format or any orchestration machinery, all of which have now been ruled out by runs
 rather than by argument.
 
+**Sixth dogfood run (2026-09-15, no graph):** the run testing the new instruction read
+every file and then failed at the request-byte guard before sending. The preserved
+record in
+[`examples/sixth-dogfood/failed-run.json`](examples/sixth-dogfood/failed-run.json)
+shows this repository's own experiment log had reached 38,322 of 78,755 serialized
+tool bytes — 49% of the research payload — after growing from 696 to 921 README lines
+across six experiments.
+
+**Complete reading and an append-only log are in direct tension, and every experiment
+makes the next one harder to run.** This is a self-hosting problem found by running
+rather than by design: the document that tells the agent what the project is for is
+also the document crowding out its capacity to investigate. The budget was raised to
+120,000 bytes, which the cost cap comfortably allows, and that defers the problem
+rather than solving it. Separating the log from the statement of purpose is the
+structural fix and is deliberately not taken yet, because what the agent would then
+choose to read is an untested assumption.
+
+**Seventh dogfood run (2026-09-15):** the same objective at a reported cost of
+**$0.006827**, archived unedited in
+[`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json) and
+[`examples/seventh-dogfood/graph.html`](examples/seventh-dogfood/graph.html).
+
+The graph proposed four tasks:
+
+1. Enhance research quality to avoid mirroring.
+2. Verify gaps before proposing tasks (depends on 1).
+3. Expand tool usage beyond file reading (depends on 1).
+4. Clarify the research summary in the graph (depends on 2).
+
+**Assessment: the first real improvement, and a smaller one than it looks.** Against
+the identical fourth and fifth runs, four things changed. *"Ensure complete research
+before decomposition"* — the already-completed task proposed twice while citing its own
+finished implementation — is gone, which is exactly what the instruction targeted. The
+graph shrank from five tasks to four. Evidence citations moved from six-to-four in
+favour of this README to an even four-and-four. And the agent read `bin/tag.js`, a file
+neither previous run opened.
+
+The third task is the most interesting thing any run has produced. *"Expand tool usage
+beyond file reading"* observes that `search` and `history` have never been used, and
+pairs that with `src/repository.js:96-117`, where both are implemented. It is a real
+gap, correctly located in code, and it is about the agent's own behaviour.
+
+But the mirroring is not solved. The remaining README citations point at this
+assessment section, and the first two tasks restate its analysis. There is now a trap
+worth naming plainly: **the more carefully a human writes the assessment here, the
+better the graph looks, without the agent having done any more work.** A paraphrase of
+good analysis is hard to distinguish from good analysis. This is the strongest reason
+to run the planner against a repository that is not tag-two, where no one has written
+the answer into the input, before concluding that decomposition has improved.
+
+What changed in this cycle: instructions can remove a specific, nameable defect —
+proposing work that already exists — where notes and warnings could not remove a
+general one. That is a narrower and more useful result than "prompting works".
+
 ---
 
 Why this exists
