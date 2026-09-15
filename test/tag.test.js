@@ -9,6 +9,7 @@ import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
 import { adopt } from '../src/adopt.js';
+import { observe, describe } from '../src/observe.js';
 
 const objective = 'Improve the project';
 const graph = () => ({
@@ -499,4 +500,59 @@ test('adopt into a repository with no durable graph yet just writes one', async 
   const result = await adopt(source, target);
   assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0 });
   assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
+});
+
+const investigated = (path, result) => ({ tool: 'read_file', arguments: { path }, result });
+
+test('observe reports what a run did and which evidence names files it never read', async t => {
+  const run = {
+    ...planned(),
+    nodes: [
+      { id: 'a', title: 'A', reason: 'r', evidence: ['src/plan.js:1 — read it'], dependsOn: [] },
+      { id: 'b', title: 'B', reason: 'r', evidence: ['examples/old.json — never opened', 'README.md:2 — read it'], dependsOn: [] },
+    ],
+  };
+  run.run.priorGraph = 'graph/graph.json';
+  run.run.investigation = [
+    { tool: 'list_files', arguments: {}, result: '{"files":[]}' },
+    investigated('README.md', '1: hello\n[Lines 1-1 of 1. End of README.md; the whole file from line 1 has been shown.]'),
+    investigated('src/plan.js', '1: code\n[PARTIAL READ: lines 1-1 of 9. The remaining 8 lines of src/plan.js have NOT been shown.]'),
+    investigated('secrets', 'Tool unavailable or invalid arguments.'),
+  ];
+  const report = await observe(await graphFile(t, run));
+  assert.equal(report.outcome, 'graph');
+  assert.deepEqual(report.calls, { list_files: 1, read_file: 3 });
+  assert.deepEqual(report.unusedTools, ['search', 'history']);
+  assert.deepEqual(report.filesRead, { 'README.md': 'complete', 'src/plan.js': 'partial' });
+  assert.deepEqual(report.evidenceCitingUnreadFiles, [{ node: 'b', evidence: 'examples/old.json — never opened' }]);
+  assert.equal(report.priorGraph, 'graph/graph.json');
+  const text = describe(report);
+  assert.match(text, /Produced a graph of 2 nodes/);
+  assert.match(text, /never called: search, history/);
+  assert.match(text, /examples\/old\.json/);
+});
+
+test('observe reads a failed run, and a file that is neither is refused', async t => {
+  const failed = {
+    objective, failure: 'Invalid planner graph.',
+    run: { model: 'test-model', requests: 2, costUsd: 0.001, answer: '{}', investigation: [
+      investigated('README.md', '1: hello\n[Lines 1-1 of 1. End of README.md; the whole file from line 1 has been shown.]'),
+    ] },
+  };
+  const report = await observe(await graphFile(t, failed));
+  assert.equal(report.outcome, 'failed');
+  assert.equal(report.answerPreserved, true);
+  assert.equal(report.evidenceCitingUnreadFiles.length, 0);
+  assert.match(describe(report), /Produced no graph\. Failure: Invalid planner graph\. Answer preserved: yes/);
+
+  await assert.rejects(observe(await graphFile(t, { anything: true })), /not a graph or a failed run/);
+  await assert.rejects(observe('no-such-run.json'), /Could not read a run/);
+});
+
+test('a file containing the words of a partial-read notice is still reported as read whole', async t => {
+  // src/repository.js builds that notice, so every run that read it looked like a partial read.
+  const run = { ...planned(), run: { ...planned().run, investigation: [
+    investigated('src/repository.js', '1: `[PARTIAL READ: lines ${start}`\n[Lines 1-1 of 1. End of src/repository.js; the whole file from line 1 has been shown.]'),
+  ] } };
+  assert.deepEqual((await observe(await graphFile(t, run))).filesRead, { 'src/repository.js': 'complete' });
 });

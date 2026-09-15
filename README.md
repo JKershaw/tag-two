@@ -68,6 +68,18 @@ investigation transcript is left behind with the archived run and referenced by 
 because a durable graph larger than one `read_file` call cannot be read by the planner
 it is supposed to inform.
 
+To see what a run actually did, without opening a browser or calling a model:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js observe .tag/graph.json
+```
+
+`observe` reads a saved graph or a `failed-run.json` and reports the model, request
+count, cost, which tools were called and which were never called, which files were read
+whole and which came back truncated, and — for a graph — every evidence citation naming
+a file that run never opened. It was written after fourteen runs had been assessed by
+hand with throwaway scripts asking the same questions.
+
 The next run is then given those outcomes. Not the graph — only the outcomes, and only
 after it has read a file. Handed whole nodes up front, two real runs restated them
 verbatim and stopped investigating.
