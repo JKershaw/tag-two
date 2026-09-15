@@ -6,12 +6,16 @@ import { cited } from './observe.js';
 
 const MODEL = 'deepseek/deepseek-chat-v3-0324';
 const API = 'https://openrouter.ai/api/v1';
-const MAX_REQUESTS = 10;
+// Lowered from 10 to pay for the larger per-request budget below. Bytes have been the binding
+// constraint in every run; no run has ever used more than five requests.
+const MAX_REQUESTS = 8;
 const MAX_OUTPUT = 4096;
-// Raised from 80,000 after a real run read every file and could not send the request: this
-// repository's own experiment log had grown to 38,322 of 78,755 serialized tool bytes. The
-// bound exists to cap cost, which this does not threaten; it defers the growth problem.
-const MAX_CONTEXT_BYTES = 120_000;
+// Raised from 80,000, then from 120,000. The second rise paid for a run that, under the citation
+// guard, read five files including this repository's whole experiment log and reached 116,999
+// serialized tool bytes without ever sending its answer. The worst-case cost bound is unchanged,
+// because MAX_REQUESTS fell from 10 to 8 in exchange. This is the third time the repository has
+// outgrown its own research budget, and raising the number is still not a structural answer.
+const MAX_CONTEXT_BYTES = 160_000;
 
 const instructions = `Investigate the repository before proposing a small useful task graph.
 Use list_files, read_file, search, and history yourself; no source excerpts have been selected for you.
@@ -38,7 +42,7 @@ Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
 "reason":"why this matters to the objective","evidence":["path:lines — observation"],"dependsOn":[]}]}
-You have at most 10 model requests including your final answer. Batch tool calls when useful.
+You have at most 8 model requests including your final answer. Batch tool calls when useful.
 Do not claim to have inspected files you have not read.`;
 
 async function request(path, options, fetchImpl) {

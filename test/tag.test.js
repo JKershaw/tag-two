@@ -292,14 +292,14 @@ test('a run that fails before investigating leaves no directory behind', async t
   await assert.rejects(readFile(join(directory, '.tag', 'failed-run.json')), { code: 'ENOENT' });
 });
 
-test('tool loop is bounded to ten requests', async t => {
+test('tool loop is bounded to eight requests', async t => {
   const directory = await fixture(t);
   let calls = 0;
   await assert.rejects(plan(objective, directory, {
     apiKey: 'test-only',
     fetchImpl: async () => ++calls === 1 ? catalog() : toolAnswer(),
   }), /Investigation limit/);
-  assert.equal(calls, 11);
+  assert.equal(calls, 9);
 });
 
 const planned = () => ({
