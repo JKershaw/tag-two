@@ -1,62 +1,48 @@
 {
   "objective": "Make tag-two better at achieving its purpose.",
-  "summary": "The repository describes tag-two as an experiment in persistent, agent-assisted problem solving. The current implementation allows investigation of repositories and proposes task graphs, but has limitations in research depth and tool usage. The planner tends to mirror context topics rather than independently verifying gaps. Prior attempts to improve research (like expanding tool usage) have shown mixed results. The system mechanically ensures complete file reads but struggles to propose tasks that address verified gaps in the code.",
+  "summary": "The repository describes an experiment in persistent, agent-assisted problem solving. The current implementation focuses on generating task graphs based on repository investigation. Recent outcomes indicate that expanding tool usage and enhancing evidence collection are areas of interest. The system has shown that directives in instructions can sometimes influence tool usage, but not reliably. Evidence collection has been improved with the addition of `tag observe`, which helps identify unread file citations.",
   "nodes": [
     {
-      "id": "enhance-evidence",
-      "title": "Enhance evidence collection in task proposals",
-      "reason": "Current task proposals often cite general documentation rather than specific code gaps. Better evidence collection would lead to more actionable tasks.",
+      "id": "investigate-tool-usage",
+      "title": "Investigate tool usage patterns",
+      "reason": "Understanding how and when tools like `history` and `search` are used can help improve the planner's effectiveness. This builds on prior outcomes showing mixed results with tool directives.",
       "evidence": [
-        "graph/graph.json:9-12 — Tasks cite README lines rather than code gaps",
-        "src/repository.js:96-117 — Search and history tools exist but are underutilized"
+        "README.md:20 — The planner uses one OpenRouter model with read-only tools.",
+        "src/plan.js:21 — Instructions include using `history` and `search`."
       ],
       "dependsOn": []
     },
     {
-      "id": "improve-gap-detection",
-      "title": "Improve gap detection between documentation and implementation",
-      "reason": "The planner currently treats documentation claims as unsolved problems without verifying implementation status.",
+      "id": "enhance-evidence-validation",
+      "title": "Enforce evidence validation",
+      "reason": "The addition of `tag observe` has shown that some runs cite unread files. Rejecting or flagging such graphs could improve the reliability of task proposals.",
       "evidence": [
-        "README.md:259-265 — Agent cited finished implementation as reason for work",
-        "graph/graph.json:16-22 — 'verify-gaps' task acknowledges this issue"
+        "test/tag.test.js:560 — Test case for rejecting graphs with unread file citations.",
+        "src/plan.js:182 — Validation checks for unread file citations."
       ],
-      "dependsOn": [
-        "enhance-evidence"
-      ]
+      "dependsOn": []
     },
     {
-      "id": "tool-strategy",
-      "title": "Develop more effective tool usage strategy",
-      "reason": "Current tool usage is inconsistent despite implementation availability. A systematic approach could improve research quality.",
+      "id": "explore-supply-mechanism",
+      "title": "Explore durable state supply mechanisms",
+      "reason": "Prior outcomes suggest that the way durable state is supplied affects tool usage and evidence collection. Investigating alternative mechanisms could lead to more reliable behavior.",
       "evidence": [
-        "examples/eighth-dogfood/failed-run.json — Instruction to use tools was ignored",
-        "examples/ninth-dogfood/failed-run.json — Same instruction was followed in later run"
+        "src/plan.js:62 — Prior outcomes are supplied to the planner.",
+        "src/plan.js:128 — The durable state is withheld until the repository is investigated."
       ],
       "dependsOn": [
-        "enhance-evidence"
-      ]
-    },
-    {
-      "id": "outcome-integration",
-      "title": "Improve outcome integration in planning",
-      "reason": "Recorded outcomes don't reliably inform future planning, leading to redundant proposals.",
-      "evidence": [
-        "graph/graph.json:38-46 — Node was reproposed despite having outcomes",
-        "README.md:43-51 — Outcome recording exists but isn't effectively used"
-      ],
-      "dependsOn": [
-        "enhance-evidence"
+        "investigate-tool-usage"
       ]
     }
   ],
   "run": {
     "model": "deepseek/deepseek-chat-v3-0324",
-    "createdAt": "2026-09-15T17:35:46.750Z",
-    "requests": 5,
-    "costUsd": 0.0061095,
+    "createdAt": "2026-09-15T17:47:08.283Z",
+    "requests": 3,
+    "costUsd": 0.00790675,
     "priorGraph": "/home/user/tag-two/graph/graph.json",
     "investigation": [],
-    "transcript": "examples/fourteenth-dogfood/graph.json"
+    "transcript": "examples/nineteenth-dogfood/graph.json"
   },
   "outcomes": [
     {
@@ -76,6 +62,12 @@
       "title": "Enhance evidence collection in task proposals",
       "at": "2026-09-15T17:41:43.534Z",
       "outcome": "Worked 2026-09-15 (fifteenth change). Built `tag observe`, which reports what a run actually did and lists every evidence citation naming a file the run never opened. Measured across all eight archived graphs: runs 1, 2, 4, 5 and 7 invented 0 of 44 citations; runs 12 and 13, each handed the whole durable graph, invented 4 of 8; run 14, handed only recorded outcomes, invented 2 of 8. ESTABLISHED: invented citations did not exist before durable state was supplied, and reducing what is supplied reduces them. The defect is caused by the supply mechanism, not by the model's general habits. Not yet tried: rejecting or flagging a graph whose evidence cites unread files."
+    },
+    {
+      "node": "enhance-evidence",
+      "title": "Enhance evidence collection in task proposals",
+      "at": "2026-09-15T17:48:08.102Z",
+      "outcome": "Worked 2026-09-15 (runs 16 to 19). Evidence citations are now checked against the run transcript: a graph whose evidence names a file the run did not read is rejected, the instructions say so, and nothing is stripped or retried. The durable graph and its rendering were also removed from the file-listing and file-reading tools. Measured by tag observe across four consecutive runs: run 15 invented 7 of 10 citations and read 1 file; run 16 invented 3 and read 4 files and called history; run 18 invented 3, two of them copied out of the durable graph it had read as a file; run 19 invented 0 of 6 and read 4 files. Run 17 produced no graph, reaching 116,999 of 120,000 request bytes after reading five files including the whole experiment log; the byte budget rose to 160,000 and the request limit fell from 10 to 8."
     }
   ]
 }
