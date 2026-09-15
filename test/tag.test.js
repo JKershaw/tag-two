@@ -103,6 +103,42 @@ test('repository tools read, search and paginate tracked files, not secrets or u
   await assert.rejects(run('history', { path: '--all' }));
 });
 
+test('read_file distinguishes a partial read from a complete one and names the next call', async t => {
+  const directory = await fixture(t);
+  await writeFile(join(directory, 'long.md'), Array.from({ length: 706 }, (_, i) => `line ${i + 1}`).join('\n') + '\n');
+  execFileSync('git', ['-C', directory, 'add', 'long.md']);
+  const run = await repositoryTools(directory);
+
+  // The first dogfood run read 200 of 706 README lines and stopped; the note must say what was withheld.
+  const partial = await run('read_file', { path: 'long.md' });
+  assert.match(partial, /PARTIAL READ: lines 1-200 of 707\./);
+  assert.match(partial, /remaining 507 lines of long\.md have NOT been shown/);
+  assert.match(partial, /startLine 201 to read them/);
+
+  const resumed = await run('read_file', { path: 'long.md', startLine: 201 });
+  assert.match(resumed, /^201: line 201/);
+  assert.match(resumed, /PARTIAL READ: lines 201-400 of 707/);
+
+  // A file shown in full must not carry a partial-read warning.
+  const complete = await run('read_file', { path: 'README.md' });
+  assert.match(complete, /End of README\.md; the whole file from line 1 has been shown\./);
+  assert.doesNotMatch(complete, /PARTIAL READ/);
+  assert.match(await run('read_file', { path: 'long.md', startLine: 700 }), /End of long\.md/);
+  assert.match(await run('read_file', { path: 'long.md', startLine: 900 }), /No lines read: long\.md has 707 lines/);
+});
+
+test('read_file stays bounded on long lines and reports the line it stopped at', async t => {
+  const directory = await fixture(t);
+  await writeFile(join(directory, 'wide.txt'), ['a'.repeat(15_000), 'b'.repeat(15_000), 'c'].join('\n') + '\n');
+  execFileSync('git', ['-C', directory, 'add', 'wide.txt']);
+  const run = await repositoryTools(directory);
+  const result = await run('read_file', { path: 'wide.txt' });
+  assert.ok(result.length < 25_000, `expected a bounded read, got ${result.length} characters`);
+  // Stopping mid-file must be reported as partial with an accurate resume point, never silently.
+  assert.match(result, /PARTIAL READ: lines 1-1 of 4\./);
+  assert.match(result, /startLine 2 to read them/);
+});
+
 test('rejects symlink reads, binary content, oversized files and repository subdirectories', async t => {
   const directory = await fixture(t);
   await symlink('README.md', join(directory, 'link.txt'));

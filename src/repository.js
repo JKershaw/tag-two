@@ -70,8 +70,25 @@ export async function repositoryTools(directory) {
         const start = args.startLine ?? 1;
         if (!Number.isInteger(start) || start < 1) throw new Error('Invalid startLine.');
         const lines = await textFile(args.path);
-        return lines.slice(start - 1, start + 199).map((line, index) => `${start + index}: ${line}`).join('\n')
-          .slice(0, 20_000) + `\n[${lines.length} total lines; at most 200 lines / 20000 characters per read]`;
+        if (start > lines.length) {
+          return `[No lines read: ${args.path} has ${lines.length} lines, so startLine ${start} is past the end.]`;
+        }
+        // A partial read must say so; the first dogfood run stopped at line 200 of a 706-line
+        // README because the previous note looked the same for complete and truncated reads.
+        const delivered = [];
+        let size = 0;
+        for (const [index, line] of lines.slice(start - 1, start + 199).entries()) {
+          const numbered = `${start + index}: ${line}`;
+          const text = numbered.length > 20_000 ? `${numbered.slice(0, 20_000)} …[long line truncated]` : numbered;
+          if (delivered.length && size + text.length + 1 > 20_000) break;
+          delivered.push(text);
+          size += text.length + 1;
+        }
+        const last = start + delivered.length - 1;
+        const remaining = lines.length - last;
+        return delivered.join('\n') + '\n' + (remaining > 0
+          ? `[PARTIAL READ: lines ${start}-${last} of ${lines.length}. The remaining ${remaining} lines of ${args.path} have NOT been shown. Call read_file with path "${args.path}" and startLine ${last + 1} to read them.]`
+          : `[Lines ${start}-${last} of ${lines.length}. End of ${args.path}; the whole file from line ${start} has been shown.]`);
       }
       case 'search': {
         if (typeof args.text !== 'string' || !args.text.trim()) throw new Error('Expected nonempty search text.');
