@@ -38,6 +38,28 @@ reported cost (or null when unavailable), and investigation history.
 
 The graph is a proposal, not an execution queue: “ready” means no graph dependencies,
 and a human decides what happens next. Nothing runs automatically afterward.
+
+When a node has been worked, record what happened against it:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js record graph/graph.json expand-tools "what happened"
+```
+
+`record` appends a timestamped outcome to that one node, revalidates the graph and
+re-renders the HTML beside it. It chooses nothing, runs nothing and calls no model; a
+human still decides which node to work and does the work. Outcomes accumulate rather
+than replace, and a node that has any is shown as worked rather than ready.
+
+[`graph/graph.json`](graph/graph.json) is this repository's own working graph — the
+seventh run's output, promoted out of the ignored `.tag` directory so that tag-two's
+understanding of its own problem is durable, tracked and readable by the planner.
+Committing a graph is a deliberate exception for this repository, which is its own
+experimental subject; `plan()` still ignores `.tag` by default because graphs of other
+repositories may contain their content. The working graph carries no investigation
+transcript: the unedited seventh run including its transcript is archived in
+[`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json), and an
+83 KB duplicate inside a tracked file would on its own consume most of the planner's
+research budget.
 Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
 including when planning in another repository, because they may include repository
 content. Existing `.tag` directories are never overwritten: preserve or move a
@@ -333,6 +355,72 @@ the answer into the input, before concluding that decomposition has improved.
 What changed in this cycle: instructions can remove a specific, nameable defect —
 proposing work that already exists — where notes and warnings could not remove a
 general one. That is a narrower and more useful result than "prompting works".
+
+**Eighth dogfood run (2026-09-15, no graph):** the first run whose subject was chosen
+by tag-two rather than by a human. Node `expand-tools` of the seventh graph —
+*"Expand tool usage beyond file reading"*, evidenced at `src/repository.js:96-117` —
+was worked directly: the planner's system instructions gained one sentence telling it
+to call `history` to see what had recently changed and `search` to check a claim,
+before treating a document's description of an open problem as current. The preserved
+record is
+[`examples/eighth-dogfood/failed-run.json`](examples/eighth-dogfood/failed-run.json),
+at a reported cost of **$0.00699275**.
+
+**Assessment: the hypothesis is refuted, and the run also failed on a punctuation
+mark.** Two separate results came out of it.
+
+First, the change did what it was told not to do nothing about. The run made six tool
+calls and every one was `list_files` or `read_file`. `search` and `history` were not
+called once, in a run whose system prompt named both by tool name, gave a reason to
+call them, and placed that sentence directly before the output format. Run 2
+established that a directive inside a *tool result* does not produce a tool call; this
+establishes the same for a directive in the *system instructions*, which was the
+untested half. **Instructions can remove a behaviour the model is already performing,
+but they have not once caused this model to perform a tool call it was not already
+going to make.** If the planner is to see history, the system will have to supply it,
+exactly as whole-file reads had to be supplied rather than requested — and there is
+still no evidence that seeing history would improve decomposition, so that change is
+not yet justified.
+
+Second, the graph was rejected because the model echoed the objective as
+`Make tag-two better at achieving its purpose` and the objective was
+`Make tag-two better at achieving its purpose.` — a missing full stop. The graph
+inside the answer is otherwise a valid four-node graph. Three of eight runs have now
+failed on output format and none on substance. The exact-string echo is a poor drift
+detector: it is insensitive to a graph that has genuinely wandered off-objective and
+hypersensitive to a full stop. This is noted rather than fixed, because one occurrence
+across four successful echoes is not yet a pattern, and preserving the failure is more
+useful than a guard loosened on a single data point.
+
+**The eighth run is where the bootstrap problem became concrete.** A node from
+tag-two's own graph was selected, worked, and refuted — and there was nowhere to put
+that result except this paragraph. `graph.json` is written once by `plan()` and no
+code anywhere in the repository ever opens it again. The continuity the project calls
+its product has, until now, been held entirely in a human's head and in this prose.
+That is the observed need behind the next change, and it is the step this README has
+described from the beginning: *"then we determine the smallest mechanism necessary to
+feed the result back into the graph."*
+
+**Ninth change — `tag record`, and a tracked working graph.** `graph/graph.json` is
+the seventh run's graph, unedited except by `tag record`, promoted out of the ignored
+`.tag` directory so that tag-two's own understanding of its own problem is durable and
+inspectable. `tag record <graph> <node> "<outcome>"` appends a timestamped outcome to
+one node, revalidates the graph and re-renders
+[`graph/graph.html`](graph/graph.html). It does not decide anything, schedule
+anything or execute anything; a human still chooses the node and does the work. The
+first thing recorded through it was the refutation above, against the very node that
+caused it.
+
+Committing a graph is a deliberate exception for this repository, which is its own
+experimental subject. `plan()` still ignores `.tag` by default, because graphs of
+other people's repositories may contain their content.
+
+Note what this makes true, and what it does not. tag-two is now part of the causal
+loop of its own development: the choice of what to work came out of its graph, and the
+result of that work went back into its graph rather than only into a human's notes. It
+is not autonomous, it did not judge anything, and `plan()` still cannot read a graph
+back — it can only write a new one. The next question is what happens when the
+planner investigates a repository that contains a graph with a refuted node in it.
 
 ---
 

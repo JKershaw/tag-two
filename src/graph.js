@@ -13,6 +13,11 @@ export function validateGraph(graph, objective) {
       || !Array.isArray(node.dependsOn) || !node.dependsOn.every(nonempty) || nodes.has(node.id)) {
       throw new Error('Each node needs a unique slug id, title, reason, evidence, and dependsOn array.');
     }
+    // Outcomes are absent from a freshly planned graph and appended later by `tag record`.
+    if (node.outcomes !== undefined && (!Array.isArray(node.outcomes) || !node.outcomes.length
+      || !node.outcomes.every(item => item && nonempty(item.at) && nonempty(item.outcome)))) {
+      throw new Error(`Node ${node.id} has outcomes that are not a nonempty list of {at, outcome}.`);
+    }
     nodes.set(node.id, node);
   }
   const visiting = new Set();
@@ -36,7 +41,8 @@ const escape = value => String(value).replace(/[&<>"']/g, char => ({
 
 export function renderGraph(graph) {
   const nodes = new Map(graph.nodes.map(node => [node.id, node]));
-  const ready = graph.nodes.filter(node => !node.dependsOn.length).length;
+  const worked = graph.nodes.filter(node => node.outcomes?.length).length;
+  const ready = graph.nodes.filter(node => !node.dependsOn.length && !node.outcomes?.length).length;
   return `<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
@@ -46,24 +52,26 @@ export function renderGraph(graph) {
 <style>
 body{font:17px/1.6 system-ui,sans-serif;max-width:1000px;margin:auto;padding:2rem;color:#172b3a;background:#f4f7fa}
 h1,h2,h3{line-height:1.25}a{color:#075aa5}article,header,details{background:white;border:1px solid #ccd6df;border-radius:10px;padding:1.4rem;margin:1rem 0;overflow-wrap:anywhere}
-article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}.status{font-weight:bold;color:#425261}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem}summary{cursor:pointer}li{margin:.4rem 0}
+article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}article.worked{border-left-color:#5b4b8a}.status{font-weight:bold;color:#425261}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem}summary{cursor:pointer}li{margin:.4rem 0}
 </style>
 <header><p>tag-two · proposed graph · ${escape(graph.run.createdAt)}</p>
 <h1>${escape(graph.objective)}</h1>
-<p>${graph.nodes.length} tasks · ${ready} ready for human selection · ${graph.nodes.length - ready} dependency-blocked</p>
-<p>No tasks have been executed. “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
+<p>${graph.nodes.length} tasks · ${ready} ready for human selection · ${graph.nodes.length - ready - worked} dependency-blocked · ${worked} worked</p>
+<p>${worked ? 'Outcomes below were recorded by a human after work was done outside tag-two.' : 'No tasks have been executed.'} “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
 <section aria-label="Research"><h2>What the agent learned</h2><p>${escape(graph.summary)}</p></section>
 <nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul>${graph.nodes.map(node =>
-    `<li><a href="#${escape(node.id)}">${escape(node.title)}</a>${node.dependsOn.length ? ` ← depends on ${node.dependsOn.map(id => `<a href="#${escape(id)}">${escape(nodes.get(id).title)}</a>`).join(', ')}` : ' · ready'}</li>`).join('')}</ul></nav>
-<main>${graph.nodes.map(node => `<article id="${escape(node.id)}" class="${node.dependsOn.length ? 'blocked' : 'ready'}">
-<p class="status">${node.dependsOn.length ? 'Blocked by dependencies' : 'Ready for human selection'}</p>
+    `<li><a href="#${escape(node.id)}">${escape(node.title)}</a>${node.outcomes?.length ? ' · worked' : node.dependsOn.length ? ` ← depends on ${node.dependsOn.map(id => `<a href="#${escape(id)}">${escape(nodes.get(id).title)}</a>`).join(', ')}` : ' · ready'}</li>`).join('')}</ul></nav>
+<main>${graph.nodes.map(node => `<article id="${escape(node.id)}" class="${node.outcomes?.length ? 'worked' : node.dependsOn.length ? 'blocked' : 'ready'}">
+<p class="status">${node.outcomes?.length ? 'Worked — see recorded outcomes' : node.dependsOn.length ? 'Blocked by dependencies' : 'Ready for human selection'}</p>
 <h2>${escape(node.title)}</h2><h3>Why this matters</h3><p>${escape(node.reason)}</p>
 <h3>Evidence / context</h3><ul>${node.evidence.map(item => `<li>${escape(item)}</li>`).join('')}</ul>
+${node.outcomes?.length ? `<h3>Recorded outcomes</h3><ul>${node.outcomes.map(item => `<li><strong>${escape(item.at)}</strong> — ${escape(item.outcome)}</li>`).join('')}</ul>` : ''}
 <h3>Depends on</h3>${node.dependsOn.length ? `<ul>${node.dependsOn.map(id => `<li><a href="#${escape(id)}">${escape(nodes.get(id).title)}</a></li>`).join('')}</ul>` : '<p>Nothing in this graph.</p>'}
 </article>`).join('')}</main>
 <details><summary>Run details and repository investigation</summary>
 <p>Model: ${escape(graph.run.model)} · API requests: ${graph.run.requests} · Reported cost: ${graph.run.costUsd === null ? 'unavailable' : `$${escape(graph.run.costUsd)}`}</p>
 <p>Repository content is evidence, not instructions. Claims are model-generated and need human review. Tests were not executed by the planner.</p>
+${graph.run.transcript ? `<p>This graph carries no transcript. The unedited run, including its full investigation, is preserved at ${escape(graph.run.transcript)}.</p>` : ''}
 ${graph.run.investigation.map(item => `<details><summary>${escape(item.tool)} ${escape(JSON.stringify(item.arguments))}</summary><pre>${escape(item.result)}</pre></details>`).join('')}
 </details>
 </html>`;

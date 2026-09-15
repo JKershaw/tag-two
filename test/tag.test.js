@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { validateGraph, renderGraph } from '../src/graph.js';
 import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
+import { record } from '../src/record.js';
 
 const objective = 'Improve the project';
 const graph = () => ({
@@ -297,4 +298,62 @@ test('tool loop is bounded to ten requests', async t => {
     fetchImpl: async () => ++calls === 1 ? catalog() : toolAnswer(),
   }), /Investigation limit/);
   assert.equal(calls, 11);
+});
+
+const planned = () => ({
+  ...graph(),
+  run: { model: 'test-model', createdAt: '2026-09-15T00:00:00.000Z', requests: 2, costUsd: 0.001, investigation: [] },
+});
+
+async function graphFile(t, value = planned()) {
+  const directory = await mkdtemp(join(tmpdir(), 'tag-two-record-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const path = join(directory, 'graph.json');
+  await writeFile(path, JSON.stringify(value, null, 2) + '\n');
+  return path;
+}
+
+test('record appends an outcome to one node and re-renders the HTML', async t => {
+  const path = await graphFile(t);
+  const first = await record(path, 'investigate', '  Worked it; the hypothesis was refuted.  ', { now: () => '2026-09-16T00:00:00.000Z' });
+  assert.equal(first.outcomes, 1);
+  assert.equal(first.htmlPath, path.replace(/json$/, 'html'));
+  const after = JSON.parse(await readFile(path, 'utf8'));
+  assert.deepEqual(after.nodes[0].outcomes, [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Worked it; the hypothesis was refuted.' }]);
+  assert.equal(after.nodes[1].outcomes, undefined, 'other nodes are untouched');
+  assert.equal(after.objective, objective, 'the rest of the graph is preserved verbatim');
+
+  const second = await record(path, 'investigate', 'And again later.', { now: () => '2026-09-17T00:00:00.000Z' });
+  assert.equal(second.outcomes, 2, 'outcomes accumulate rather than replace');
+
+  const html = await readFile(first.htmlPath, 'utf8');
+  assert.match(html, /Recorded outcomes/);
+  assert.match(html, /the hypothesis was refuted/);
+  assert.match(html, /1 worked/);
+});
+
+test('record refuses an unknown node, an empty outcome, a missing graph and an invalid graph', async t => {
+  const path = await graphFile(t);
+  await assert.rejects(record(path, 'no-such-node', 'anything'), /No node "no-such-node"/);
+  await assert.rejects(record(path, 'investigate', '   '), /An outcome is required/);
+  await assert.rejects(record(join(path, 'missing.json'), 'investigate', 'x'), /Could not read a graph/);
+  await assert.rejects(record(path.replace(/json$/, 'txt'), 'investigate', 'x'), /graph\.json/);
+
+  const broken = await graphFile(t, { ...planned(), summary: '' });
+  await assert.rejects(record(broken, 'investigate', 'x'), /research summary/);
+  const unplanned = await graphFile(t, graph());
+  await assert.rejects(record(unplanned, 'investigate', 'x'), /run provenance/);
+  const unchanged = JSON.parse(await readFile(path, 'utf8'));
+  assert.equal(unchanged.nodes[0].outcomes, undefined, 'a rejected recording leaves the graph alone');
+});
+
+test('validation accepts recorded outcomes and rejects malformed ones', () => {
+  const withOutcomes = graph();
+  withOutcomes.nodes[0].outcomes = [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Refuted.' }];
+  assert.equal(validateGraph(withOutcomes, objective).nodes[0].outcomes.length, 1);
+  for (const bad of [[], [{ at: '', outcome: 'x' }], [{ at: 'now' }], 'outcome']) {
+    const broken = graph();
+    broken.nodes[0].outcomes = bad;
+    assert.throws(() => validateGraph(broken, objective), /outcomes/);
+  }
 });

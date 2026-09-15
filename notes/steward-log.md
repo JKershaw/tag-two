@@ -27,3 +27,26 @@ Started at the eighth dogfood experiment, after seven runs archived in `examples
 Item 6 is the largest gap between the stated purpose and the implementation, and it is
 the one that blocks anything downstream of planning. Notably, no graph tag-two has
 produced has ever proposed it.
+
+## Run 8 (2026-09-15) — first node worked from tag-two's own graph
+
+Performed externally:
+- Read seven runs of README prose to reconstruct the state of the experiment. tag-two
+  holds none of that; it was all human-written narrative.
+- Chose node `expand-tools` from `examples/seventh-dogfood/graph.json`. tag-two ranks
+  nothing and marks nothing; "ready" is a structural fact about dependencies.
+- Designed the hypothesis, edited `src/plan.js`, ran `npm test`, ran the planner,
+  diagnosed the failure, archived `.tag/failed-run.json`, wrote the assessment.
+
+Still external after this run, unchanged: everything above except item 6 of the
+standing list. Item 6 is now partly addressed — `tag record` exists and the outcome of
+this run is in `graph/graph.json` rather than only in prose and in my head.
+
+New observations:
+- `plan()` refuses to write into an existing `.tag`, so every run needs a manual
+  archive-and-remove first. Eight times now. This is the most mechanical of the
+  standing interventions and the one least in need of judgement.
+- The exact-string objective echo rejected a valid graph over a missing full stop.
+  Noted, not fixed: one occurrence against four correct echoes.
+- A graph is not currently a thing tag-two can read. `record` is the first code in the
+  repository that opens a graph. `plan()` still cannot consult one.
