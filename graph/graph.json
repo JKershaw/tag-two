@@ -94,6 +94,12 @@
       "from": "steward",
       "kind": "observation",
       "text": "this keeps proposing work we've already done"
+    },
+    {
+      "at": "2026-09-15T21:05:50.164Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Checked 2026-09-15 in one bounded request ($0.00084). All 3 nodes of this durable graph are reported by its own recorded outcomes as already done or refuted, each with a verbatim quote: investigate-tool-usage (run 9 called history; a directive CAN produce a tool call, unreliably), enhance-evidence-validation (citations are already checked against the transcript and offending graphs rejected), explore-supply-mechanism (a third durable-state channel was tested in the epistemic/control trial). This graph proposes no unworked task. Also checked: run 86's fresh graph, 4 of 6 firmly stale; run 85's control graph, 1 of 5."
     }
   ]
 }
