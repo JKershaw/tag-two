@@ -21,10 +21,11 @@ export async function record(graphPath, nodeId, outcome, { now = () => new Date(
   if (!node) {
     throw new Error(`No node "${nodeId}" in ${graphPath}. It has: ${graph.nodes.map(item => item.id).join(', ')}.`);
   }
-  node.outcomes = [...(node.outcomes ?? []), { at: now(), outcome: outcome.trim() }];
+  graph.outcomes = [...(graph.outcomes ?? []),
+    { node: node.id, title: node.title, at: now(), outcome: outcome.trim() }];
   validateGraph(graph, graph.objective);
   await writeFile(graphPath, JSON.stringify(graph, null, 2) + '\n');
   const htmlPath = graphPath.slice(0, -'.json'.length) + '.html';
   await writeFile(htmlPath, renderGraph(graph));
-  return { htmlPath, outcomes: node.outcomes.length };
+  return { htmlPath, outcomes: graph.outcomes.length };
 }

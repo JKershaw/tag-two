@@ -446,3 +446,61 @@ what happened.
 
 The next run isolates the confound by changing only that: same planner, same durable
 graph, a README that fits in one read.
+
+**Thirteenth dogfood run (2026-09-15):** identical to the twelfth except that the
+README now fits in one read. Archived in
+[`examples/thirteenth-dogfood/graph.json`](examples/thirteenth-dogfood/graph.json) at
+**$0.00301446**.
+
+**Assessment: the confound is eliminated and the durable graph is the cause.** With a
+complete README available the planner still called `list_files`, read `README.md`, and
+answered. One file, three requests, seven unused. Its citations — `README.md:259-265`,
+`README.md:204-211`, `src/repository.js:96-117`, `test/tag.test.js:106-119` — are
+copied out of the graph it was handed; the README line numbers no longer point at that
+text since the split, and the two source files were never opened.
+
+So the rule is not about position in the conversation. **Handed an answer, the planner
+returns the answer**, whether it arrives before the investigation or after the first
+read. This is the mirroring result at its sharpest: the strongest mirror yet built was
+the system's own durable state.
+
+The node bodies are the answer-shaped part. The recorded outcomes are the part that
+exists nowhere else in the repository, and the part that produced run 11's one causal
+effect. So only the outcomes are supplied now — title, timestamp, and what was observed
+— with no ids, reasons, evidence strings or unworked nodes.
+
+**Fourteenth dogfood run (2026-09-15):** the first run given recorded outcomes alone,
+archived in
+[`examples/fourteenth-dogfood/graph.json`](examples/fourteenth-dogfood/graph.json) at
+**$0.0061095**.
+
+**Assessment: research recovered and the durable record visibly did work.** Five
+requests instead of three, four files read instead of one, and — for the first time in
+fourteen runs — the planner opened `graph/graph.json` of its own accord, having been
+told only what had been observed, not what the graph said.
+
+Two of its four nodes are grounded in the durable record rather than in prose. Its
+`tool-strategy` node cites *"Instruction to use tools was ignored"* and *"Same
+instruction was followed in later run"* — which is precisely the refutation and the
+correction recorded against `expand-tools`, the pair that only the graph holds. Its
+`outcome-integration` node cites `graph/graph.json:38-46` and observes that a node was
+reproposed despite having outcomes, which is a true statement about runs 12 and 13,
+made from a file it actually read.
+
+The remaining flaw is attribution, not fabrication. It cites
+`examples/eighth-dogfood/failed-run.json` and `examples/ninth-dogfood/failed-run.json`
+for claims it learned from the supplied outcomes, and it did not open either file. The
+content is correct and the citation is invented — a different and milder failure than
+the eleventh run's, where the content was copied too.
+
+**Fifteenth change — `tag adopt`, and the loop closes.** Runs 12, 13 and 14 each
+produced a graph and none of them reached the durable one, which was still the seventh
+run's output plus two hand-written outcomes. Planning against frozen state is not a
+cycle. `tag adopt <new> <durable>` replaces the durable graph wholesale, refuses a
+graph answering a different objective, and carries every recorded outcome across;
+outcomes whose node no longer exists are kept and shown separately. Run 14's graph was
+adopted, retiring both `expand-tools` outcomes while preserving them.
+
+Adopting whole first put the durable graph at 44 KB — past the planner's own
+40,000-byte read limit, mechanising the exact failure the README had just been split to
+fix. The transcript now stays with the archived run and is referenced by path.

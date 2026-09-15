@@ -45,21 +45,41 @@ When a node has been worked, record what happened against it:
 node /absolute/path/to/tag-two/bin/tag.js record graph/graph.json expand-tools "what happened"
 ```
 
-`record` appends a timestamped outcome to that one node, revalidates the graph and
-re-renders the HTML beside it. It chooses nothing, runs nothing and calls no model; a
-human still decides which node to work and does the work. Outcomes accumulate rather
-than replace, and a node that has any is shown as worked rather than ready.
+`record` appends a timestamped outcome and re-renders the HTML beside the graph. It
+chooses nothing, runs nothing and calls no model; a human still decides which node to
+work and does the work. Outcomes accumulate rather than replace, so a claim and its
+later correction sit side by side, and a node that has any is shown as worked.
 
-[`graph/graph.json`](graph/graph.json) is this repository's own working graph — the
-seventh run's output, promoted out of the ignored `.tag` directory so that tag-two's
-understanding of its own problem is durable, tracked and readable by the planner.
+Outcomes are held on the graph rather than on the node, as
+`{node, title, at, outcome}`. Node ids do not survive replanning — the seventh run's
+ids and the fourteenth's have nothing in common — and an outcome is evidence about
+work that really happened, so it must outlive whichever node happened to propose it.
+
+When a later run produces a better graph for the same objective, adopt it:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js adopt .tag/graph.json graph/graph.json
+```
+
+`adopt` replaces the durable graph wholesale and carries every recorded outcome
+across, refusing a graph that answers a different objective. Outcomes whose node no
+longer exists are kept and shown separately rather than discarded. The new graph's
+investigation transcript is left behind with the archived run and referenced by path,
+because a durable graph larger than one `read_file` call cannot be read by the planner
+it is supposed to inform.
+
+The next run is then given those outcomes. Not the graph — only the outcomes, and only
+after it has read a file. Handed whole nodes up front, two real runs restated them
+verbatim and stopped investigating.
+
+[`graph/graph.json`](graph/graph.json) is this repository's own working graph, tracked
+rather than left in the ignored `.tag` directory so that tag-two's understanding of its
+own problem is durable, inspectable and readable by the planner.
 Committing a graph is a deliberate exception for this repository, which is its own
 experimental subject; `plan()` still ignores `.tag` by default because graphs of other
 repositories may contain their content. The working graph carries no investigation
-transcript: the unedited seventh run including its transcript is archived in
-[`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json), and an
-83 KB duplicate inside a tracked file would on its own consume most of the planner's
-research budget.
+transcript: every run is archived unedited in `examples/`, and an 83 KB duplicate
+inside a tracked file would on its own consume most of the planner's research budget.
 Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
 including when planning in another repository, because they may include repository
 content. Existing `.tag` directories are never overwritten: preserve or move a

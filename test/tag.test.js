@@ -8,6 +8,7 @@ import { validateGraph, renderGraph } from '../src/graph.js';
 import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
+import { adopt } from '../src/adopt.js';
 
 const objective = 'Improve the project';
 const graph = () => ({
@@ -319,8 +320,11 @@ test('record appends an outcome to one node and re-renders the HTML', async t =>
   assert.equal(first.outcomes, 1);
   assert.equal(first.htmlPath, path.replace(/json$/, 'html'));
   const after = JSON.parse(await readFile(path, 'utf8'));
-  assert.deepEqual(after.nodes[0].outcomes, [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Worked it; the hypothesis was refuted.' }]);
-  assert.equal(after.nodes[1].outcomes, undefined, 'other nodes are untouched');
+  assert.deepEqual(after.outcomes, [{
+    node: 'investigate', title: 'Investigate usefulness',
+    at: '2026-09-16T00:00:00.000Z', outcome: 'Worked it; the hypothesis was refuted.',
+  }]);
+  assert.deepEqual(after.nodes, graph().nodes, 'the nodes themselves are untouched');
   assert.equal(after.objective, objective, 'the rest of the graph is preserved verbatim');
 
   const second = await record(path, 'investigate', 'And again later.', { now: () => '2026-09-17T00:00:00.000Z' });
@@ -344,17 +348,17 @@ test('record refuses an unknown node, an empty outcome, a missing graph and an i
   const unplanned = await graphFile(t, graph());
   await assert.rejects(record(unplanned, 'investigate', 'x'), /run provenance/);
   const unchanged = JSON.parse(await readFile(path, 'utf8'));
-  assert.equal(unchanged.nodes[0].outcomes, undefined, 'a rejected recording leaves the graph alone');
+  assert.equal(unchanged.outcomes, undefined, 'a rejected recording leaves the graph alone');
 });
 
 test('validation accepts recorded outcomes and rejects malformed ones', () => {
-  const withOutcomes = graph();
-  withOutcomes.nodes[0].outcomes = [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Refuted.' }];
-  assert.equal(validateGraph(withOutcomes, objective).nodes[0].outcomes.length, 1);
-  for (const bad of [[], [{ at: '', outcome: 'x' }], [{ at: 'now' }], 'outcome']) {
-    const broken = graph();
-    broken.nodes[0].outcomes = bad;
-    assert.throws(() => validateGraph(broken, objective), /outcomes/);
+  const entry = { node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z', outcome: 'Refuted.' };
+  assert.equal(validateGraph({ ...graph(), outcomes: [entry] }, objective).outcomes.length, 1);
+  // An outcome for a node this graph no longer has is evidence, not an error: ids do not survive replanning.
+  assert.equal(validateGraph({ ...graph(), outcomes: [{ ...entry, node: 'long-gone' }] }, objective).outcomes.length, 1);
+  assert.equal(validateGraph({ ...graph(), outcomes: [] }, objective).outcomes.length, 0);
+  for (const bad of [[{ ...entry, at: '' }], [{ ...entry, outcome: ' ' }], [{ at: 'now', outcome: 'x' }], 'outcome']) {
+    assert.throws(() => validateGraph({ ...graph(), outcomes: bad }, objective), /Recorded outcomes/);
   }
 });
 
@@ -372,7 +376,7 @@ test('the planner is handed the recorded outcomes, and nothing else from the dur
   const directory = await fixture(t);
   await mkdir(join(directory, 'graph'));
   const durable = planned();
-  durable.nodes[0].outcomes = [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Worked and refuted.' }];
+  durable.outcomes = [{ node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z', outcome: 'Worked and refuted.' }];
   await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
 
   let sent;
@@ -449,4 +453,50 @@ test('an answer rejected for skipping investigation is still preserved', async t
   assert.match(failed.failure, /without reading repository evidence/);
   assert.equal(JSON.parse(failed.run.answer).nodes.length, 2);
   assert.deepEqual(failed.run.investigation, []);
+});
+
+test('adopt replaces a durable graph and carries every recorded outcome across', async t => {
+  const durablePath = await graphFile(t);
+  await record(durablePath, 'investigate', 'Worked and refuted.', { now: () => '2026-09-16T00:00:00.000Z' });
+  await record(durablePath, 'demonstrate', 'Still open.', { now: () => '2026-09-17T00:00:00.000Z' });
+
+  // A replanned graph shares no node ids with the old one, which is why outcomes live on the graph.
+  const replanned = { ...planned(), summary: 'A later run learned more.', nodes: [
+    { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
+  ] };
+  const result = await adopt(await graphFile(t, replanned), durablePath);
+  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2 });
+
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.nodes.map(node => node.id), ['something-else']);
+  // A durable graph too large for one read_file call cannot be read by the planner it informs.
+  assert.deepEqual(after.run.investigation, [], 'the transcript stays with the archived run');
+  assert.match(after.run.transcript, /graph\.json$/);
+  assert.equal(after.summary, 'A later run learned more.');
+  assert.deepEqual(after.outcomes.map(item => item.outcome), ['Worked and refuted.', 'Still open.']);
+
+  const html = await readFile(result.htmlPath, 'utf8');
+  assert.match(html, /no longer contains/, 'outcomes outlive the nodes that proposed them');
+  assert.match(html, /Worked and refuted\./);
+});
+
+test('adopt refuses a different objective, a bad path and an invalid graph, and changes nothing', async t => {
+  const durablePath = await graphFile(t);
+  await record(durablePath, 'investigate', 'Worked and refuted.', { now: () => '2026-09-16T00:00:00.000Z' });
+  const before = await readFile(durablePath, 'utf8');
+
+  const elsewhere = await graphFile(t, { ...planned(), objective: 'A different objective' });
+  await assert.rejects(adopt(elsewhere, durablePath), /different objective/);
+  await assert.rejects(adopt(await graphFile(t, { ...planned(), summary: '' }), durablePath), /research summary/);
+  await assert.rejects(adopt(join(durablePath, 'missing.json'), durablePath), /Could not read a graph/);
+  await assert.rejects(adopt(durablePath, durablePath.replace(/json$/, 'txt')), /graph\.json/);
+  assert.equal(await readFile(durablePath, 'utf8'), before, 'a refused adoption leaves the durable graph alone');
+});
+
+test('adopt into a repository with no durable graph yet just writes one', async t => {
+  const source = await graphFile(t);
+  const target = join(source, '..', 'fresh.json');
+  const result = await adopt(source, target);
+  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0 });
+  assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
 });

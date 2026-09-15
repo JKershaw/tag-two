@@ -50,3 +50,37 @@ New observations:
   Noted, not fixed: one occurrence against four correct echoes.
 - A graph is not currently a thing tag-two can read. `record` is the first code in the
   repository that opens a graph. `plan()` still cannot consult one.
+
+## Runs 9–14 (2026-09-15)
+
+What changed in the division of labour. tag-two now performs, without me:
+- consulting durable knowledge of work already performed (runs 11 and 14);
+- choosing to open its own graph as evidence (run 14, unprompted);
+- carrying outcomes across a replanning (`tag adopt`).
+
+Still external, and the list has barely shrunk:
+- deciding when to run, and with what objective;
+- clearing `.tag` and copying artifacts into `examples/` — fourteen times now, purely
+  mechanical, and the one intervention requiring no judgement whatsoever;
+- reading the new graph and deciding whether it is better than the durable one;
+- choosing which node to work;
+- doing the work — every code change in this repository is still mine;
+- observing what the run actually did, and writing the outcome text;
+- deciding what the result means and what to try next.
+
+Interventions that turned out to be missing capabilities:
+- `record`: the eighth run had a result and nowhere to put it.
+- supply outcomes to the planner: the ninth run reproposed a node whose outcome said it
+  had just been refuted, because nothing read the graph.
+- `adopt`: three consecutive runs produced graphs that never reached durable state.
+- stripping the transcript on adoption: I had done it by hand once, and the mechanism
+  immediately reintroduced the problem at 44 KB.
+
+Interventions that should probably stay external, on current evidence:
+- judging whether a graph is good enough to adopt. Every attempt so far to let the
+  system evaluate its own output has produced mirroring rather than judgement.
+
+An honest correction to my own log: after the eighth run I recorded a refutation drawn
+from a single run, and the ninth run contradicted it. I was doing exactly what I had
+criticised the planner for — generalising from the most recent salient thing. The
+durable graph held both claims; my own note would have held only the first.

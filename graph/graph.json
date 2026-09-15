@@ -1,70 +1,75 @@
 {
   "objective": "Make tag-two better at achieving its purpose.",
-  "summary": "The repository describes tag-two as a tiny experiment in persistent, agent-assisted problem solving. The system investigates a repository and proposes a small task graph to advance an objective. The current implementation includes tools for file inspection, validation, and rendering, but the planner's decomposition quality is limited by mirroring behavior rather than independent analysis. Prior attempts to improve research depth and evidence citations have not significantly enhanced the usefulness of the proposed tasks. The system ensures complete research mechanically but still struggles to propose tasks that reflect verified gaps in the code.",
+  "summary": "The repository describes tag-two as an experiment in persistent, agent-assisted problem solving. The current implementation allows investigation of repositories and proposes task graphs, but has limitations in research depth and tool usage. The planner tends to mirror context topics rather than independently verifying gaps. Prior attempts to improve research (like expanding tool usage) have shown mixed results. The system mechanically ensures complete file reads but struggles to propose tasks that address verified gaps in the code.",
   "nodes": [
     {
-      "id": "improve-research",
-      "title": "Enhance research quality to avoid mirroring",
-      "reason": "The planner currently mirrors the most discussed topics in its context without verifying whether the proposed work already exists or addresses a real gap. Improving research quality will lead to more meaningful task proposals.",
+      "id": "enhance-evidence",
+      "title": "Enhance evidence collection in task proposals",
+      "reason": "Current task proposals often cite general documentation rather than specific code gaps. Better evidence collection would lead to more actionable tasks.",
       "evidence": [
-        "README.md:156-160 — The agent proposed improving research depth in the same request it declined to read the rest of the README.",
-        "src/repository.js:78-95 — Implementation of whole-file reads to avoid partial research."
+        "graph/graph.json:9-12 — Tasks cite README lines rather than code gaps",
+        "src/repository.js:96-117 — Search and history tools exist but are underutilized"
       ],
       "dependsOn": []
     },
     {
-      "id": "verify-gaps",
-      "title": "Verify gaps before proposing tasks",
-      "reason": "The planner should cross-check proposed tasks against the repository to ensure they address actual gaps rather than restating existing work.",
+      "id": "improve-gap-detection",
+      "title": "Improve gap detection between documentation and implementation",
+      "reason": "The planner currently treats documentation claims as unsolved problems without verifying implementation status.",
       "evidence": [
-        "README.md:259-265 — The agent cited the finished implementation of whole-file reads as the reason to do the work, demonstrating the need for verification.",
-        "test/tag.test.js:106-119 — Tests confirm the repository tools enforce complete file reads."
+        "README.md:259-265 — Agent cited finished implementation as reason for work",
+        "graph/graph.json:16-22 — 'verify-gaps' task acknowledges this issue"
       ],
       "dependsOn": [
-        "improve-research"
+        "enhance-evidence"
       ]
     },
     {
-      "id": "expand-tools",
-      "title": "Expand tool usage beyond file reading",
-      "reason": "The planner has never used `search` or `history` tools, limiting its ability to gather diverse evidence. Expanding tool usage could improve research depth.",
+      "id": "tool-strategy",
+      "title": "Develop more effective tool usage strategy",
+      "reason": "Current tool usage is inconsistent despite implementation availability. A systematic approach could improve research quality.",
       "evidence": [
-        "README.md:269-271 — The agent has never used `search` or `history` in any run.",
-        "src/repository.js:96-117 — Implementation of search and history tools."
+        "examples/eighth-dogfood/failed-run.json — Instruction to use tools was ignored",
+        "examples/ninth-dogfood/failed-run.json — Same instruction was followed in later run"
       ],
       "dependsOn": [
-        "improve-research"
-      ],
-      "outcomes": [
-        {
-          "at": "2026-09-15T17:25:32.463Z",
-          "outcome": "Worked 2026-09-15 (eighth dogfood run). One sentence was added to the planner's system instructions naming history and search and giving a reason to call them: 'Call history to see what has actually changed recently, and search to check a specific claim, before treating any document's description of an open problem as current.' The run that followed made six tool calls, all list_files or read_file; neither search nor history was called once. REFUTED: a system-instruction directive does not cause this model to make a tool call it was not already going to make, which matches run 2's result for a directive inside a tool result. Evidence: examples/eighth-dogfood/failed-run.json. Do not reopen this node by instruction; if the planner is to see history the system must supply it, and no run yet shows that seeing history would improve decomposition."
-        },
-        {
-          "at": "2026-09-15T17:28:03.193Z",
-          "outcome": "CORRECTION 2026-09-15 (ninth dogfood run). The refutation recorded above was drawn from a single run and is wrong as stated. With the identical instruction still in place, run 9 called history for the first time in nine runs. So a system-instruction directive CAN produce a tool call from this model; it just does not do so reliably, and one run is not enough to refute a behavioural hypothesis. Evidence: examples/ninth-dogfood/failed-run.json, investigation entry 7. What run 9 also showed is more useful: it never opened graph/graph.json, so the outcome recorded on this node had no effect on its planning, and it proposed this very node again. Recording an outcome is not the same as consulting one."
-        }
+        "enhance-evidence"
       ]
     },
     {
-      "id": "clarify-summary",
-      "title": "Clarify the research summary in the graph",
-      "reason": "The research summary should clearly distinguish between inspected and verified behavior to avoid misleading task proposals.",
+      "id": "outcome-integration",
+      "title": "Improve outcome integration in planning",
+      "reason": "Recorded outcomes don't reliably inform future planning, leading to redundant proposals.",
       "evidence": [
-        "README.md:204-211 — The summary does not clearly distinguish inspected tests from verified runtime behavior.",
-        "src/graph.js:55-56 — HTML rendering of the research summary."
+        "graph/graph.json:38-46 — Node was reproposed despite having outcomes",
+        "README.md:43-51 — Outcome recording exists but isn't effectively used"
       ],
       "dependsOn": [
-        "verify-gaps"
+        "enhance-evidence"
       ]
     }
   ],
   "run": {
     "model": "deepseek/deepseek-chat-v3-0324",
-    "createdAt": "2026-09-15T17:07:22.554Z",
-    "requests": 3,
-    "costUsd": 0.006827,
+    "createdAt": "2026-09-15T17:35:46.750Z",
+    "requests": 5,
+    "costUsd": 0.0061095,
+    "priorGraph": "/home/user/tag-two/graph/graph.json",
     "investigation": [],
-    "transcript": "examples/seventh-dogfood/graph.json"
-  }
+    "transcript": "examples/fourteenth-dogfood/graph.json"
+  },
+  "outcomes": [
+    {
+      "node": "expand-tools",
+      "title": "Expand tool usage beyond file reading",
+      "at": "2026-09-15T17:25:32.463Z",
+      "outcome": "Worked 2026-09-15 (eighth dogfood run). One sentence was added to the planner's system instructions naming history and search and giving a reason to call them: 'Call history to see what has actually changed recently, and search to check a specific claim, before treating any document's description of an open problem as current.' The run that followed made six tool calls, all list_files or read_file; neither search nor history was called once. REFUTED: a system-instruction directive does not cause this model to make a tool call it was not already going to make, which matches run 2's result for a directive inside a tool result. Evidence: examples/eighth-dogfood/failed-run.json. Do not reopen this node by instruction; if the planner is to see history the system must supply it, and no run yet shows that seeing history would improve decomposition."
+    },
+    {
+      "node": "expand-tools",
+      "title": "Expand tool usage beyond file reading",
+      "at": "2026-09-15T17:28:03.193Z",
+      "outcome": "CORRECTION 2026-09-15 (ninth dogfood run). The refutation recorded above was drawn from a single run and is wrong as stated. With the identical instruction still in place, run 9 called history for the first time in nine runs. So a system-instruction directive CAN produce a tool call from this model; it just does not do so reliably, and one run is not enough to refute a behavioural hypothesis. Evidence: examples/ninth-dogfood/failed-run.json, investigation entry 7. What run 9 also showed is more useful: it never opened graph/graph.json, so the outcome recorded on this node had no effect on its planning, and it proposed this very node again. Recording an outcome is not the same as consulting one."
+    }
+  ]
 }

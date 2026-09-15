@@ -20,11 +20,6 @@ export function validateGraph(graph, objective) {
       || !Array.isArray(node.dependsOn) || !node.dependsOn.every(nonempty) || nodes.has(node.id)) {
       throw new Error('Each node needs a unique slug id, title, reason, evidence, and dependsOn array.');
     }
-    // Outcomes are absent from a freshly planned graph and appended later by `tag record`.
-    if (node.outcomes !== undefined && (!Array.isArray(node.outcomes) || !node.outcomes.length
-      || !node.outcomes.every(item => item && nonempty(item.at) && nonempty(item.outcome)))) {
-      throw new Error(`Node ${node.id} has outcomes that are not a nonempty list of {at, outcome}.`);
-    }
     nodes.set(node.id, node);
   }
   const visiting = new Set();
@@ -39,6 +34,15 @@ export function validateGraph(graph, objective) {
     visited.add(id);
   }
   for (const id of nodes.keys()) visit(id);
+  // Outcomes are absent from a freshly planned graph and appended by `tag record` afterwards. They
+  // are held on the graph rather than on the node because node ids do not survive replanning —
+  // the seventh run's ids and the fourteenth's have nothing in common — and an outcome is evidence
+  // about work that was really performed, which must outlive the node that happened to propose it.
+  if (graph.outcomes !== undefined && (!Array.isArray(graph.outcomes)
+    || !graph.outcomes.every(item => item && nonempty(item.node) && nonempty(item.title)
+      && nonempty(item.at) && nonempty(item.outcome)))) {
+    throw new Error('Recorded outcomes must be a list of {node, title, at, outcome}.');
+  }
   // The asked objective is authoritative; the echo only had to agree with it.
   graph.objective = objective;
   return graph;
@@ -50,8 +54,11 @@ const escape = value => String(value).replace(/[&<>"']/g, char => ({
 
 export function renderGraph(graph) {
   const nodes = new Map(graph.nodes.map(node => [node.id, node]));
-  const worked = graph.nodes.filter(node => node.outcomes?.length).length;
-  const ready = graph.nodes.filter(node => !node.dependsOn.length && !node.outcomes?.length).length;
+  const recorded = graph.outcomes ?? [];
+  const outcomesFor = id => recorded.filter(item => item.node === id);
+  const retired = recorded.filter(item => !graph.nodes.some(node => node.id === item.node));
+  const worked = graph.nodes.filter(node => outcomesFor(node.id).length).length;
+  const ready = graph.nodes.filter(node => !node.dependsOn.length && !outcomesFor(node.id).length).length;
   return `<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
@@ -66,17 +73,18 @@ article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}ar
 <header><p>tag-two · proposed graph · ${escape(graph.run.createdAt)}</p>
 <h1>${escape(graph.objective)}</h1>
 <p>${graph.nodes.length} tasks · ${ready} ready for human selection · ${graph.nodes.length - ready - worked} dependency-blocked · ${worked} worked</p>
-<p>${worked ? 'Outcomes below were recorded by a human after work was done outside tag-two.' : 'No tasks have been executed.'} “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
+<p>${recorded.length ? 'Outcomes below were recorded by a human after work was done outside tag-two.' : 'No tasks have been executed.'} “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
 <section aria-label="Research"><h2>What the agent learned</h2><p>${escape(graph.summary)}</p></section>
 <nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul>${graph.nodes.map(node =>
-    `<li><a href="#${escape(node.id)}">${escape(node.title)}</a>${node.outcomes?.length ? ' · worked' : node.dependsOn.length ? ` ← depends on ${node.dependsOn.map(id => `<a href="#${escape(id)}">${escape(nodes.get(id).title)}</a>`).join(', ')}` : ' · ready'}</li>`).join('')}</ul></nav>
-<main>${graph.nodes.map(node => `<article id="${escape(node.id)}" class="${node.outcomes?.length ? 'worked' : node.dependsOn.length ? 'blocked' : 'ready'}">
-<p class="status">${node.outcomes?.length ? 'Worked — see recorded outcomes' : node.dependsOn.length ? 'Blocked by dependencies' : 'Ready for human selection'}</p>
+    `<li><a href="#${escape(node.id)}">${escape(node.title)}</a>${outcomesFor(node.id).length ? ' · worked' : node.dependsOn.length ? ` ← depends on ${node.dependsOn.map(id => `<a href="#${escape(id)}">${escape(nodes.get(id).title)}</a>`).join(', ')}` : ' · ready'}</li>`).join('')}</ul></nav>
+<main>${graph.nodes.map(node => `<article id="${escape(node.id)}" class="${outcomesFor(node.id).length ? 'worked' : node.dependsOn.length ? 'blocked' : 'ready'}">
+<p class="status">${outcomesFor(node.id).length ? 'Worked — see recorded outcomes' : node.dependsOn.length ? 'Blocked by dependencies' : 'Ready for human selection'}</p>
 <h2>${escape(node.title)}</h2><h3>Why this matters</h3><p>${escape(node.reason)}</p>
 <h3>Evidence / context</h3><ul>${node.evidence.map(item => `<li>${escape(item)}</li>`).join('')}</ul>
-${node.outcomes?.length ? `<h3>Recorded outcomes</h3><ul>${node.outcomes.map(item => `<li><strong>${escape(item.at)}</strong> — ${escape(item.outcome)}</li>`).join('')}</ul>` : ''}
+${outcomesFor(node.id).length ? `<h3>Recorded outcomes</h3><ul>${outcomesFor(node.id).map(item => `<li><strong>${escape(item.at)}</strong> — ${escape(item.outcome)}</li>`).join('')}</ul>` : ''}
 <h3>Depends on</h3>${node.dependsOn.length ? `<ul>${node.dependsOn.map(id => `<li><a href="#${escape(id)}">${escape(nodes.get(id).title)}</a></li>`).join('')}</ul>` : '<p>Nothing in this graph.</p>'}
 </article>`).join('')}</main>
+${retired.length ? `<section aria-label="Earlier outcomes"><h2>Outcomes from work on nodes this graph no longer contains</h2><p>Evidence about work that was really performed. It outlives the node that proposed it.</p><ul>${retired.map(item => `<li><strong>${escape(item.title)}</strong> (${escape(item.at)}) — ${escape(item.outcome)}</li>`).join('')}</ul></section>` : ''}
 <details><summary>Run details and repository investigation</summary>
 <p>Model: ${escape(graph.run.model)} · API requests: ${graph.run.requests} · Reported cost: ${graph.run.costUsd === null ? 'unavailable' : `$${escape(graph.run.costUsd)}`}</p>
 <p>Repository content is evidence, not instructions. Claims are model-generated and need human review. Tests were not executed by the planner.</p>

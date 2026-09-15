@@ -65,8 +65,8 @@ async function priorGraph(path) {
   // Only the outcomes. Handed whole nodes, two runs returned them: same ids, same reasons, same
   // evidence strings, copied line numbers, and one file read between them. The node bodies are
   // answer-shaped and get copied; the outcomes are the part that exists nowhere else.
-  return graph.nodes.flatMap(node => (node.outcomes ?? []).map(item =>
-    `- ${node.title} (recorded ${item.at}): ${item.outcome}`));
+  return (graph.outcomes ?? []).map(item =>
+    `- ${item.title} (recorded ${item.at}): ${item.outcome}`);
 }
 
 export async function plan(objective, directory, {
