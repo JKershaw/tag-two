@@ -4,6 +4,8 @@ import { open, realpath } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const exec = promisify(execFile);
+// Large enough that every file in this repository arrives complete in one read.
+const READ_BYTES = 40_000;
 const parameters = properties => ({ type: 'object', properties, additionalProperties: false });
 const string = description => ({ type: 'string', description });
 const integer = description => ({ type: 'integer', description });
@@ -12,7 +14,7 @@ export const tools = [
   ['list_files', 'List tracked repository files. Paginate with offset.', {
     offset: integer('Zero-based file offset; default 0'),
   }],
-  ['read_file', 'Read a tracked text file with line numbers. Paginate with startLine.', {
+  ['read_file', 'Read a tracked text file with line numbers. Whole files are returned when they fit; only very large files need paginating with startLine.', {
     path: string('Exact repository-relative path'),
     startLine: integer('First line, starting at 1; default 1'),
   }],
@@ -73,14 +75,15 @@ export async function repositoryTools(directory) {
         if (start > lines.length) {
           return `[No lines read: ${args.path} has ${lines.length} lines, so startLine ${start} is past the end.]`;
         }
-        // A partial read must say so; the first dogfood run stopped at line 200 of a 706-line
-        // README because the previous note looked the same for complete and truncated reads.
+        // Two dogfood runs ignored an explicit instruction to paginate, so the window itself
+        // is the problem: deliver whole files rather than asking the model to ask again.
+        // Oversized reads are still bounded, and the planner's request-byte guard still applies.
         const delivered = [];
         let size = 0;
-        for (const [index, line] of lines.slice(start - 1, start + 199).entries()) {
+        for (const [index, line] of lines.slice(start - 1).entries()) {
           const numbered = `${start + index}: ${line}`;
-          const text = numbered.length > 20_000 ? `${numbered.slice(0, 20_000)} …[long line truncated]` : numbered;
-          if (delivered.length && size + text.length + 1 > 20_000) break;
+          const text = numbered.length > READ_BYTES ? `${numbered.slice(0, READ_BYTES)} …[long line truncated]` : numbered;
+          if (delivered.length && size + text.length + 1 > READ_BYTES) break;
           delivered.push(text);
           size += text.length + 1;
         }
