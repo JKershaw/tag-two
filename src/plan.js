@@ -28,10 +28,9 @@ where a document and the code disagree, the code is what exists. Propose work wh
 confirmed in code, not the topics your context discusses most.
 Call history to see what has actually changed recently, and search to check a specific claim, before
 treating any document's description of an open problem as current.
-If a durable graph is supplied during the investigation, it is this system's own record of the problem.
-Its recorded outcomes describe work that was actually performed and what was observed; treat them as
-established results and do not propose work an outcome reports as already done or already refuted.
-Nodes carrying no outcome are still open. You may keep, drop, reword or replace any node.
+If recorded outcomes are supplied during the investigation, they describe work that was actually
+performed on this objective and what was observed. Treat them as established results: do not propose
+work an outcome reports as already done or already refuted, and do not assume they cover everything.
 Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
@@ -63,8 +62,11 @@ async function priorGraph(path) {
   }
   const graph = JSON.parse(text);
   validateGraph(graph, graph?.objective);
-  const { run, ...rest } = graph;
-  return rest;
+  // Only the outcomes. Handed whole nodes, two runs returned them: same ids, same reasons, same
+  // evidence strings, copied line numbers, and one file read between them. The node bodies are
+  // answer-shaped and get copied; the outcomes are the part that exists nowhere else.
+  return graph.nodes.flatMap(node => (node.outcomes ?? []).map(item =>
+    `- ${node.title} (recorded ${item.at}): ${item.outcome}`));
 }
 
 export async function plan(objective, directory, {
@@ -74,7 +76,8 @@ export async function plan(objective, directory, {
 } = {}) {
   if (typeof objective !== 'string' || !objective.trim()) throw new Error('An objective is required.');
   if (!apiKey) throw new Error('Set OPENROUTER_API_KEY before planning.');
-  const prior = await priorGraph(graphPath);
+  const outcomes = await priorGraph(graphPath);
+  const prior = outcomes?.length ? outcomes : null;
   const investigate = await repositoryTools(directory);
   const output = join(directory, '.tag');
   try {
@@ -114,7 +117,7 @@ export async function plan(objective, directory, {
       // investigated, and never allowed to stand in for investigating it.
       if (prior && !supplied && researched()) {
         supplied = true;
-        messages.push({ role: 'user', content: `Now that you have investigated, here is the durable graph for this objective, including outcomes recorded by a human after work was actually performed:\n${JSON.stringify(prior, null, 2)}` });
+        messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished.` });
       }
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,

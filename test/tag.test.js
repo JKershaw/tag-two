@@ -368,7 +368,7 @@ test('an objective echoed without its trailing full stop is accepted, a differen
   assert.throws(() => validateGraph({ ...graph(), objective: '' }, objective), /original objective/);
 });
 
-test('the planner is handed a durable graph with its recorded outcomes when the repository tracks one', async t => {
+test('the planner is handed the recorded outcomes, and nothing else from the durable graph', async t => {
   const directory = await fixture(t);
   await mkdir(join(directory, 'graph'));
   const durable = planned();
@@ -390,9 +390,11 @@ test('the planner is handed a durable graph with its recorded outcomes when the 
   };
   await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
   assert.equal(sent.role, 'user');
-  assert.match(sent.content, /^Now that you have investigated, here is the durable graph/);
-  assert.match(sent.content, /Worked and refuted\./, 'recorded outcomes reach the model');
-  assert.doesNotMatch(sent.content, /"investigation"/, 'the transcript is not resent');
+  assert.match(sent.content, /^Work already performed on this objective/);
+  assert.match(sent.content, /- Investigate usefulness \(recorded 2026-09-16T00:00:00\.000Z\): Worked and refuted\./);
+  assert.doesNotMatch(sent.content, /Find evidence of progress/, 'node reasons are not resent');
+  assert.doesNotMatch(sent.content, /README\.md:1/, 'node evidence strings are not resent');
+  assert.doesNotMatch(sent.content, /Demonstrate improvement/, 'nodes without outcomes are not resent');
   const written = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
   assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
 });
@@ -410,6 +412,22 @@ test('a repository with no durable graph is planned exactly as before, and a cor
   await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
   assert.equal(prompt, objective);
   assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).run.priorGraph, null);
+
+  // A tracked graph nobody has recorded anything against carries no durable knowledge yet.
+  const empty = await fixture(t);
+  await mkdir(join(empty, 'graph'));
+  await writeFile(join(empty, 'graph', 'graph.json'), JSON.stringify(planned(), null, 2) + '\n');
+  let turns = 0;
+  await plan(objective, empty, {
+    apiKey: 'test-only',
+    fetchImpl: async (url, options) => {
+      if (++turns === 1) return catalog();
+      const messages = JSON.parse(options.body).messages;
+      if (turns === 2) return toolAnswer();
+      assert.deepEqual(messages.map(item => item.role), ['system', 'user', 'assistant', 'tool']);
+      return answer(JSON.stringify(graph()));
+    },
+  });
 
   const broken = await fixture(t);
   await mkdir(join(broken, 'graph'));
