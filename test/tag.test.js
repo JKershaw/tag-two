@@ -135,6 +135,9 @@ test('planner investigates, persists graph and HTML, then stops without executin
   assert.equal(saved.run.costUsd, 0.002);
   assert.equal(saved.run.investigation.length, 1);
   assert.ok((await readFile(htmlPath, 'utf8')).includes('No tasks have been executed'));
+  for (const path of ['.tag/graph.json', '.tag/graph.html', '.tag/.gitignore']) {
+    execFileSync('git', ['-C', directory, 'check-ignore', '-q', path]);
+  }
   assert.equal(calls, 3);
   await assert.rejects(plan(objective, directory, { apiKey: 'test-only', fetchImpl }), /already exists/);
   assert.equal(calls, 3);

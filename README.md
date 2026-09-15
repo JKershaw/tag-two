@@ -37,7 +37,8 @@ reported cost (or null when unavailable), and investigation history.
 
 The graph is a proposal, not an execution queue: “ready” means no graph dependencies,
 and a human decides what happens next. Nothing runs automatically afterward.
-Both outputs stay local and are Git-ignored because they may include repository
+Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
+including when planning in another repository, because they may include repository
 content. Existing `.tag` directories are never overwritten: preserve or move a
 previous experiment explicitly before starting another.
 
@@ -53,6 +54,14 @@ moving it aside.
 
 The first dogfood run should use the objective above exactly once. Inspect its
 unedited graph for usefulness rather than rerunning until the answer looks good.
+
+**First attempt (2026-09-15):** the command above stopped at the model-catalog
+request because `openrouter.ai` could not be resolved (`ENOTFOUND`) in the build
+environment. No model inference request was made, no graph was generated, and
+the planner was not rerun. The offline tests demonstrate the mechanics, not the
+quality of a real decomposition. The next human action is to provide network
+access to OpenRouter and perform the first actual planning run; usefulness remains
+an open question.
 
 ---
 

@@ -121,6 +121,7 @@ export async function plan(objective, directory, {
       graph.run = { model: MODEL, createdAt: new Date().toISOString(), requests: turn, costUsd, investigation };
       const html = renderGraph(graph);
       saving = true;
+      await writeFile(join(output, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 });
       await writeFile(join(output, 'graph.json'), JSON.stringify(graph, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await writeFile(join(output, 'graph.html'), html, { flag: 'wx', mode: 0o600 });
       return join(output, 'graph.html');
