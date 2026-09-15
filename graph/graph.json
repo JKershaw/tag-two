@@ -118,6 +118,18 @@
       "from": "steward",
       "kind": "correction",
       "text": "A verified quote proves the sentence exists in an outcome, not that it supports the finding. On run 88 two of three done verdicts quote 'ESTABLISHED: twenty runs of work improved research completeness...' which reports that mirroring happens, not that reducing it was done; on run 85 implement-outcome-checks was flagged using the citation-guard outcome, which is a different check. Treat a quoted verdict as a pointer for a human to adjudicate in seconds, not as a decision. Do not build a gate on top of it."
+    },
+    {
+      "at": "2026-09-15T21:14:21.687Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Swept 2026-09-15 across 14 archived graphs for $0.00738, each checked only against the outcomes that existed when it ran. Runs handed durable outcomes: 24 of 47 proposed nodes are reported done or refuted by the record they were given (11 graphs). Runs of the same era not handed them: 4 of 14 (3 graphs). CONFOUNDED, not established: the control graphs planned against a different commit, n=3, and the check itself varies by about one node per graph between identical calls. What is firm is the supplied arm's own number — roughly half of everything the planner proposes, while holding the record in its input, is work that record already reports."
+    },
+    {
+      "at": "2026-09-15T21:14:21.761Z",
+      "from": "steward",
+      "kind": "decision",
+      "text": "Not adopting run 88's graph over this one. Both are stale: this graph is 3 of 3 and run 88 is 2 to 3 of 5. Replacing a documented-stale graph with another stale graph loses the documentation and gains nothing. The durable graph stays as it is, exhausted and known to be exhausted, until something produces proposals the record does not already answer. This is a product judgement, not a measurement."
     }
   ]
 }
