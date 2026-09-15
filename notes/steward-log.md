@@ -251,3 +251,72 @@ judging a result; writing an outcome; and every line of code in this repository.
 The list has not shrunk in twenty-one runs. That is now a result rather than a status
 note: three consecutive trials have aimed at the input, the durable state and the output
 shape, and none of them moved it.
+
+## The human-directed loop, runs 85–88 (2026-09-15)
+
+This is the first trial where I was told to stop treating myself as the problem. Every section
+above this one is written as a list of things tag-two cannot do for itself, ordered by how much
+I want to stop doing them. The instruction this time was that human judgement, intent and
+redirection are not defects, and that what should shrink is the labour around them.
+
+That reframing changed what I built. Asked to reduce my involvement, I would have tried again
+to make the planner decide better — which is what the last three trials did, and all three
+failed. Asked instead to reduce the labour, the first thing I noticed was that I had nowhere to
+*put* a sentence I had said, and the mechanism that followed took ten minutes and works.
+
+### The two roles, kept separate on purpose
+
+**Things I did that were judgement.** Choosing the observation to start from. Deciding that the
+planner was the wrong responder and that the claim should be checked instead. Writing down my
+own scoring of three graphs before the checking mechanism existed, so it had something to be
+wrong against. Reading two verified quotes and seeing that they did not support the findings
+they justified. Deciding not to adopt run 88's graph. Deciding this trial was over at
+Milestone B rather than reaching for C.
+
+**Things I did that were only missing machinery.** Writing `check.js` and the sweep harness.
+Clearing `.tag` and copying artifacts — six more times. Diagnosing two empty provider
+responses. Deciding when to run.
+
+The second list is the one that should shrink, and this trial moved exactly one item out of it:
+I no longer read seven outcome paragraphs against a graph's nodes to find out what is stale.
+`tag check` does that for a tenth of a cent and shows me the quote so I can overturn it.
+
+### The thing I nearly got wrong
+
+I wrote my scoring of runs 85, 86 and 87 into a scratch file before writing a line of
+`check.js`. I nearly did not — the mechanism felt obviously right and the hand scoring felt
+like ceremony. It is the only reason I can say the check agrees with a human rather than that
+a human agreed with the check afterwards, and it is also what let me see the two false
+positives quickly: I already knew what the answer should look like.
+
+### What the machine did that I did not have to
+
+- told me my own durable graph was completely exhausted, with three verbatim quotes, before I
+  had read any of it;
+- carried my observation into a stateless run an hour later, which cited it back to me;
+- checked fourteen archived graphs against the outcomes that existed when each was made,
+  from one question, while I did nothing.
+
+### What it still cannot do, and this is the sharp one
+
+**It never asked me anything.** Across seven recorded turns, tag-two never once said that
+something needed a human. Its own graph went to three-of-three stale — the state where the
+only honest next move is a human decision — and it had no way to say so. I found out by
+running a check I had built and reading the output myself. Everything in this repository is
+built to *tell* a human things; nothing in it can *ask*.
+
+That is now the boundary I would look at next, and I am deliberately not building it today,
+because one exhausted graph is one observation and this project's rule is that a mechanism
+needs a failure that demonstrates it. If a second interaction stalls because tag-two held a
+question it could not put to me, that will be the failure.
+
+### Still external, unchanged
+
+Deciding when to run and with what objective; designing an experiment; choosing what evidence
+discriminates; forming and rejecting a hypothesis; recognising mirroring; judging a result;
+writing an outcome; adjudicating an unsupported quote; and every line of code in this
+repository.
+
+The list is one item shorter than it was twenty-one runs ago, and the item that moved
+— reading the record to find out what is already done — moved because I stopped trying to make
+the planner decide better and started checking its answer instead.

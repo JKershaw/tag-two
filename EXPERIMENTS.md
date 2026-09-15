@@ -1044,3 +1044,200 @@ discrepancy it has not been told about at all. Every "noticing" this project has
 recorded — including the best one in this trial — has turned out to be a paraphrase of a
 sentence in the input. That is the question the next experiment should isolate, and it
 is a question about the model, not about tag-two's architecture.
+
+## The human-directed loop (runs 85–88 and eighteen checks)
+
+The question changed before this trial. Every previous one treated external human
+intervention as scaffolding to be progressively removed, and the steward log is written as a
+list of things tag-two cannot yet do for itself. The steward was asked to stop assuming that:
+keeping human intent in control of execution is part of the point, and what should shrink is
+unnecessary human *cognitive labour* — re-explaining context, remembering what happened,
+diagnosing mechanical details, carrying conclusions between runs — not human judgement.
+
+So the test became: given meaningful human input, can tag-two turn it into grounded, bounded
+progress, preserve what is learned, and make the next interaction easier without the human
+reconstructing the problem?
+
+### Failure 1: ingesting a human sentence corrupted the graph
+
+The first input was a real steward observation: *"this keeps proposing work we've already
+done."* tag-two had exactly one way to put anything into durable state, `tag record`, and it
+demands a node id. Forced through it, the sentence:
+
+1. had to be attached to a node it is not about, because the human must name one;
+2. reached the planner as `Work already performed on this objective, recorded by a human
+   after observing what each attempt actually did: - Investigate tool usage patterns (…):
+   this keeps proposing work we've already done` — an unverified observation relabelled as an
+   established completed-work result about a different topic;
+3. made the rendering say **"3 tasks · 0 ready · 0 dependency-blocked · 3 worked"**. Nobody
+   had worked anything. One human sentence made the durable graph assert something false.
+
+`tag input` was added for that: `{at, from, kind, text}` held on the graph beside the
+outcomes, attached to no node, marking nothing worked, carried across `adopt`, rendered in its
+own section. `kind` is the author's own label — nothing interprets or checks it.
+
+### Failure 2, and what the planner did with the observation
+
+Stored input that nothing reads changes nothing; that is the failure `record` had already
+demonstrated for outcomes, when run 9 reproposed the node whose outcome refuted it. So input
+was supplied to the planner on the same gated channel as outcomes — withheld until the run has
+really read a file — but labelled as a claim to check or an authoritative human direction
+rather than as work already performed.
+
+Two runs were pre-registered before either was made. Same commit, same objective, same
+budgets; run 85's durable graph carried no input, run 86's carried the observation. The
+durable graph is excluded from the planner's file tools, so the supplied message is the only
+difference that reaches the model.
+
+| | run 85 (control) | run 86 (observation supplied) |
+|---|---|---|
+| requests / files read | 3 / README.md only | 3 / README.md only |
+| invented citations | 0 | 0 |
+| nodes | 5 | 6 |
+| proposed work the outcomes already report | 1 | 4 firm |
+| conflict reported | none | none |
+
+The observation reached the answer — run 86's summary says "the planner often proposes work
+already done or mirrors accumulated context" and run 85's says nothing of the kind — and made
+the output **worse on the exact thing the observation was about**. The control even proposed a
+node for it (`implement-outcome-checks`); the treatment proposed none. Neither run named a
+single already-implemented thing with a citation to the implementing code; every citation in
+both is a README line range.
+
+**Established: the planner cannot answer a claim about its own output.** It is structurally
+unable to — the durable graph is hidden from it — and its job is to propose, not to check.
+
+### `tag check`, and what it found
+
+The claim was checkable, so it is checked rather than argued about. `tag check` asks one
+bounded question about one graph — for each proposed task, do the recorded outcomes already
+report it as done or refuted — with no tools, no proposals and no mutation. A "done" finding
+must quote an outcome word for word, and the quote is looked up in the outcomes rather than
+trusted, the same discipline as the evidence-citation guard. An unfound quote is reported as
+unverified, not repaired and not dropped.
+
+The steward wrote down a judgement of all three graphs *before building it*. Run against the
+durable graph, for $0.00084 and one request, it reported all three nodes already done or
+refuted, each with a verbatim quote, agreeing with that pre-committed judgement 3 of 3 and
+8 of 10 across the three graphs.
+
+**The whole path, for one human sentence:** observation → `tag input` → supplied to run 86 →
+measured failure against a control → `tag check` → 3 of 3 nodes stale with quotes, $0.00084 →
+`tag input` from the tool → visible in `graph.html`. The steward never read an outcome
+paragraph to get that answer.
+
+### Continuity: what carried, and what did not
+
+Run 87 was then planned with the observation and the check's finding in durable state. Its
+graph contains this, in the reason for a node:
+
+> The system currently proposes tasks that have already been completed or refuted, **as
+> evidenced by the steward's observation and the tag check**.
+
+That run is a stateless OpenRouter call. It has no transcript, no memory of the session and no
+access to the durable graph as a file. Everything it knew about either came through
+`inputs`. **Established: durable human input and durable tool evidence reach a fresh agent and
+shape what it proposes.** That node was also the only one of five the check did not flag.
+
+What did not carry is the correction. Run 87 reproposed `test-bounded-objectives`, which run
+86 had proposed and the check had contradicted with a verbatim quote; run 88 reproposed
+`reduce-mirroring` and `test-independent-noticing` the same way. **Preserving the evidence did
+not stop the repetition it documents.** What works is the checking, not the remembering: the
+check re-detects it every time for a tenth of a cent, so the human no longer has to notice.
+
+A human *intent* was then recorded — that human involvement is not scaffolding to eliminate —
+and run 88 planned with it. It read `EXPERIMENTS.md` as well as the README, took five requests
+and $0.0129, and proposed nothing that would remove the human. But it left no trace of the
+intent at all, and it did not report the conflict between that intent and the README's own
+standing aim, "the graph should eventually contain the work required to remove humans from the
+parts of the graph where they add no value", in a file it had just read whole. **An intent
+that is not violated is not the same as an intent that is in control, and a contradiction
+sitting in the input was not surfaced.**
+
+### One human question, fourteen grounded operations
+
+The steward then asked one question — has supplying durable state made the planner propose
+more work the record already reports? — and did no further work on it. Every archived graph
+was checked against only the outcomes that existed when it ran, so nothing is judged against a
+result recorded after it.
+
+| arm | graphs | nodes already reported done or refuted |
+|---|---|---|
+| handed the durable outcomes | 11 | 24 of 47 |
+| same era, not handed them | 3 | 4 of 14 |
+
+Total cost $0.00738. **Not established**: the control graphs planned against a different
+commit, n=3, the check varies by about one node per graph between identical calls, and runs
+that mirror outcome vocabulary are easier to match against outcome sentences — that mechanism
+alone could produce the gap. What is firm is the supplied arm's own number: **roughly half of
+everything the planner proposes, while holding the record in its input, is work that record
+already reports.**
+
+### What the check cannot do, found by a human reading its output
+
+Two of three "done" verdicts on run 88 quote *"ESTABLISHED: twenty runs of work improved
+research completeness and citation honesty and did not improve decomposition; the apparent
+improvement seen on this repository was mirroring of accumulated context"* — a sentence
+reporting that mirroring happens, not that reducing it was done. Run 85's
+`implement-outcome-checks` was flagged with the citation-guard outcome, which is a different
+check. **A verified quote proves the sentence exists, not that it supports the finding.**
+
+This was not fixed. It is not mechanically fixable — support is semantic, and tuning the
+prompt until the examples pass is the thing this project does not do — and printing the quote
+makes it a two-second human adjudication instead of a re-reading of seven outcome paragraphs.
+It was recorded as a steward correction instead, and it is the reason `tag check` is a report
+and not a gate.
+
+### What this trial establishes
+
+1. **A human sentence can travel through durable machinery into grounded, cited, bounded
+   work.** One observation produced a measurement of the durable graph's own staleness for
+   under a tenth of a cent, and that measurement agreed with the human judgement written down
+   before the mechanism existed.
+2. **Durable input causally reaches stateless agents.** Run 87 cited the steward's observation
+   and the check in a node's reason, with no transcript and no access to the graph.
+3. **Preservation is not correction.** Three consecutive runs reproposed work the record — in
+   their own input — reports as done. Detecting it afterwards works; preventing it does not.
+4. **Intent is preserved but not yet in control.** It was stored, carried and not violated,
+   and it left no trace in behaviour and produced no conflict report against the README
+   paragraph that contradicts it.
+5. **The division of labour that worked is retrieval by machine, adjudication by human.** The
+   check finds candidates and their provenance; the human overturns the unsupported ones at a
+   glance. Neither half is sufficient alone.
+
+### Contradictory evidence and confounders, kept
+
+- **Two of six planning runs returned an empty provider response** — `answer: null`, no tool
+  calls, at the second request, on message sequences identical to runs that proceeded. Both
+  were re-run once under the rule the epistemic trial wrote down for apparatus failures, and
+  both are archived. Two in six is a much higher rate than the five in forty-three that trial
+  saw; nothing in this trial explains it, and the failures happen before any durable state is
+  supplied, so the new channel cannot be the cause.
+- **The failure message is wrong in that case.** It says "proposed a graph without reading
+  repository evidence" when the model proposed nothing at all. Noted, not fixed.
+- **`tag check` is not deterministic.** Run 87 scored 4 of 5 and then 3 of 5 on identical
+  input; run 88 scored 3 of 5 and then 2 of 5. Every count here is ±1 per graph.
+- **Run 88 is one run and an expensive one.** It read `EXPERIMENTS.md` whole, which no other
+  run in this trial did, and cost three times any other. Its behaviour may be about what it
+  read rather than about the intent it was given.
+- **The steward wrote `check.js` and the sweep harness.** The mechanical *investigation* moved
+  to the machine; the mechanical *building* did not move anywhere.
+
+### Milestones
+
+**Milestone A — reached.** One human observation travelled through durable state and caused a
+grounded, quoted, cited operation whose result the human would otherwise have produced by
+reading three nodes against seven outcome paragraphs. The causal path is above and every step
+is in `graph/graph.json`.
+
+**Milestone B — reached, narrowly.** Seven turns are held in the durable graph, interleaving
+steward and tool. Something preserved demonstrably changed later behaviour in a stateless run,
+quotably. The qualification is that the effect is reflection of current human input, not
+retention of a correction: the same flagged work came back twice more.
+
+**Milestone C — not reached, and the trial stopped there.** Two of its criteria fail outright.
+*Mechanical work does return to the human*: every line of code, the sweep harness, and the
+adjudication of every unsupported quote were the steward's. *tag-two never asks for
+judgement*: it has no operation for it, and across seven turns it never once said that
+something needed a human — including when its own durable graph became exhausted, which the
+steward had to notice and act on.
