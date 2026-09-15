@@ -411,3 +411,18 @@ test('a repository with no durable graph is planned exactly as before, and a cor
   await assert.rejects(plan(objective, broken, { apiKey: 'test-only', fetchImpl }), /research summary/);
   await assert.rejects(readFile(join(broken, '.tag', 'graph.json')), { code: 'ENOENT' });
 });
+
+test('an answer rejected for skipping investigation is still preserved', async t => {
+  // A real run answered from its supplied durable graph without reading anything, was
+  // correctly rejected, and its answer vanished: the run cost money and taught nothing.
+  const directory = await fixture(t);
+  let calls = 0;
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : answer(JSON.stringify(graph()))),
+  }), /without reading repository evidence/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.match(failed.failure, /without reading repository evidence/);
+  assert.equal(JSON.parse(failed.run.answer).nodes.length, 2);
+  assert.deepEqual(failed.run.investigation, []);
+});

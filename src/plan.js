@@ -148,10 +148,13 @@ export async function plan(objective, directory, {
         }
         continue;
       }
+      // Keep the answer before anything can reject it. A run that answered without investigating
+      // at all was rejected here and its answer was lost, which is the failure failed-run.json
+      // exists to prevent; the preservation path only triggered once this had already been set.
+      attempt.answer = message.content;
       if (!investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result))) {
         throw new Error('The model proposed a graph without reading repository evidence.');
       }
-      attempt.answer = message.content;
       // A complete, otherwise valid graph was once discarded because the model wrapped it in a
       // markdown fence. Removing that envelope is not JSON repair: malformed JSON inside it,
       // a drifted objective or an invalid graph are still rejected exactly as before.
