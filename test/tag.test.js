@@ -586,3 +586,39 @@ test('a graph citing only files the run read is accepted', async t => {
   });
   assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).nodes.length, 1);
 });
+
+test('the durable graph is not also offered to the planner as a file to read', async t => {
+  // A real run read graph/graph.json and copied node bodies and their citations out of it.
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(planned(), null, 2) + '\n');
+  await writeFile(join(directory, 'graph', 'graph.html'), '<p>rendered</p>');
+  await writeFile(join(directory, 'graph', 'notes.md'), 'an ordinary tracked file\n');
+  execFileSync('git', ['-C', directory, 'add', 'graph']);
+
+  let listed;
+  let denied;
+  let calls = 0;
+  await plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async (url, options) => {
+      if (++calls === 1) return catalog();
+      if (calls === 2) return toolAnswer('list_files', {});
+      if (calls === 3) {
+        listed = JSON.parse(options.body).messages.at(-1).content;
+        return toolAnswer('read_file', { path: 'graph/graph.json' });
+      }
+      if (calls === 4) {
+        denied = JSON.parse(options.body).messages.at(-1).content;
+        return toolAnswer();
+      }
+      return answer(JSON.stringify({ ...graph(), nodes: [
+        { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — read'], dependsOn: [] },
+      ] }));
+    },
+  });
+  assert.doesNotMatch(listed, /graph\/graph\.json/, 'the durable graph is not listed');
+  assert.doesNotMatch(listed, /graph\/graph\.html/, 'nor its rendering');
+  assert.match(listed, /graph\/notes\.md/, 'other files in the same directory still are');
+  assert.match(denied, /Choose a listed tracked file|Tool unavailable/, 'and it cannot be read by name');
+});

@@ -82,7 +82,10 @@ hand with throwaway scripts asking the same questions.
 
 The next run is then given those outcomes. Not the graph — only the outcomes, and only
 after it has read a file. Handed whole nodes up front, two real runs restated them
-verbatim and stopped investigating.
+verbatim and stopped investigating. For the same reason the durable graph and its HTML
+are hidden from the planner's own file tools: a run that read `graph/graph.json` as an
+ordinary tracked file copied node bodies and their citations straight out of it. Every
+other file in that directory is still listed.
 
 [`graph/graph.json`](graph/graph.json) is this repository's own working graph, tracked
 rather than left in the ignored `.tag` directory so that tag-two's understanding of its

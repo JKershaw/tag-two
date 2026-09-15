@@ -1,5 +1,5 @@
 import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { repositoryTools, tools } from './repository.js';
 import { validateGraph, renderGraph } from './graph.js';
 import { cited } from './observe.js';
@@ -85,7 +85,10 @@ export async function plan(objective, directory, {
   if (!apiKey) throw new Error('Set OPENROUTER_API_KEY before planning.');
   const outcomes = await priorGraph(graphPath);
   const prior = outcomes?.length ? outcomes : null;
-  const investigate = await repositoryTools(directory);
+  const durable = relative(directory, graphPath);
+  const investigate = await repositoryTools(directory, {
+    exclude: [durable, durable.replace(/\.json$/, '.html')],
+  });
   const output = join(directory, '.tag');
   try {
     await mkdir(output, { mode: 0o700 });
