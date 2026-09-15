@@ -3,9 +3,8 @@ import { join, relative } from 'node:path';
 import { repositoryTools, tools } from './repository.js';
 import { validateGraph, renderGraph } from './graph.js';
 import { cited } from './observe.js';
+import { MODEL, request, affordable } from './model.js';
 
-const MODEL = 'deepseek/deepseek-chat-v3-0324';
-const API = 'https://openrouter.ai/api/v1';
 // Lowered from 10 to pay for the larger per-request budget below. Bytes have been the binding
 // constraint in every run; no run has ever used more than five requests.
 const MAX_REQUESTS = 8;
@@ -44,17 +43,6 @@ prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":
 "reason":"why this matters to the objective","evidence":["path:lines — observation"],"dependsOn":[]}]}
 You have at most 8 model requests including your final answer. Batch tool calls when useful.
 Do not claim to have inspected files you have not read.`;
-
-async function request(path, options, fetchImpl) {
-  let response;
-  try {
-    response = await fetchImpl(`${API}${path}`, { ...options, signal: AbortSignal.timeout(120_000) });
-  } catch (error) {
-    throw new Error(`OpenRouter unavailable (${error.cause?.code ?? error.name}). No retry was made.`);
-  }
-  if (!response.ok) throw new Error(`OpenRouter HTTP ${response.status}. No retry was made.`);
-  return response.json();
-}
 
 // A recorded outcome that the planner never reads changes nothing: run 9 proposed the very node
 // whose outcome said it had just been worked, because it never opened the graph. Instructions do
@@ -108,16 +96,7 @@ export async function plan(objective, directory, {
   const attempt = { model: MODEL, createdAt: new Date().toISOString(), requests: 0, costUsd: 0, investigation: [] };
   let keep = false;
   try {
-    const { data } = await request('/models', {}, fetchImpl);
-    const model = data?.find(item => item.id === MODEL);
-    const promptPrice = Number(model?.pricing?.prompt);
-    const completionPrice = Number(model?.pricing?.completion);
-    // Deliberately conservative caps, not a general-purpose cost reservation system.
-    if (!model || !Number.isFinite(promptPrice) || promptPrice < 0 || promptPrice > 0.5 / 1e6
-      || !Number.isFinite(completionPrice) || completionPrice < 0 || completionPrice > 1.5 / 1e6
-      || Number(model.pricing.request ?? 0) !== 0) {
-      throw new Error('Model unavailable or pricing exceeds the seed’s budget caps. Human review required.');
-    }
+    await affordable(fetchImpl);
     const messages = [
       { role: 'system', content: instructions },
       { role: 'user', content: objective },

@@ -10,6 +10,7 @@ import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
 import { adopt } from '../src/adopt.js';
 import { input } from '../src/input.js';
+import { check, report } from '../src/check.js';
 import { observe, describe } from '../src/observe.js';
 
 const objective = 'Improve the project';
@@ -576,6 +577,67 @@ test('adopt into a repository with no durable graph yet just writes one', async 
   const result = await adopt(source, target);
   assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0, inputs: 0 });
   assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
+});
+
+const worked = { node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z',
+  outcome: 'Worked 2026-09-16. REFUTED: a system-instruction directive does not cause a tool call.' };
+
+test('check reports which proposed tasks the outcomes already report, and verifies every quote', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const proposedPath = await graphFile(t, { ...planned(), nodes: [
+    { id: 'investigate', title: 'Investigate usefulness', reason: 'Again.', evidence: ['README.md:1 — x'], dependsOn: [] },
+    { id: 'demonstrate', title: 'Demonstrate improvement', reason: 'New.', evidence: ['README.md:1 — x'], dependsOn: [] },
+  ] });
+  let sent;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    sent = JSON.parse(options.body);
+    return answer(JSON.stringify({ findings: [
+      { node: 'investigate', status: 'done', quote: 'REFUTED: a system-instruction directive does not cause a tool call.', why: 'An outcome refutes it.' },
+      { node: 'demonstrate', status: 'open', quote: '', why: 'No outcome mentions it.' },
+    ] }));
+  };
+  const result = await check(proposedPath, durablePath, { apiKey: 'test-only', fetchImpl });
+  assert.equal(sent.tools, undefined, 'checking is one bounded question, not an investigation');
+  assert.match(sent.messages[1].content, /Recorded outcomes:/);
+  assert.match(sent.messages[2].content, /- investigate: Investigate usefulness — Again\./);
+  assert.deepEqual(result.findings.map(item => [item.node, item.status]), [['investigate', 'done'], ['demonstrate', 'open']]);
+  assert.deepEqual(result.missing, []);
+  assert.match(report(result), /1 already done or refuted · 1 not reported by any outcome · 0 claimed done/);
+});
+
+test('check will not accept a quote that does not appear in the outcomes', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const proposedPath = await graphFile(t, { ...planned(), nodes: [
+    { id: 'investigate', title: 'Investigate usefulness', reason: 'Again.', evidence: ['README.md:1 — x'], dependsOn: [] },
+  ] });
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    return answer(JSON.stringify({ findings: [
+      { node: 'investigate', status: 'done', quote: 'An outcome that says this was never recorded anywhere.', why: 'Invented.' },
+      { node: 'not-a-node', status: 'done', quote: 'x', why: 'Not asked about.' },
+    ] }));
+  };
+  const result = await check(proposedPath, durablePath, { apiKey: 'test-only', fetchImpl });
+  // The same discipline as the citation guard: an unsupported claim is reported, not repaired
+  // and not silently dropped.
+  assert.deepEqual(result.findings, [{ node: 'investigate', status: 'unverified', why: 'Invented.', quote: '' }]);
+  assert.match(report(result), /1 claimed done without a quote that appears in the outcomes/);
+});
+
+test('check refuses a durable graph with no outcomes, a bad answer and a missing key', async t => {
+  const durablePath = await graphFile(t, { ...planned(), outcomes: [worked] });
+  const empty = await graphFile(t);
+  let calls = 0;
+  const fetchImpl = async () => (++calls === 1 ? catalog() : answer('not json at all'));
+  await assert.rejects(check(empty, empty, { apiKey: 'test-only', fetchImpl: async () => catalog() }), /records no outcomes/);
+  await assert.rejects(check(empty, durablePath, { apiKey: 'test-only', fetchImpl }), /Invalid check answer/);
+  await assert.rejects(check(empty, durablePath, { apiKey: '', fetchImpl }), /OPENROUTER_API_KEY/);
+  calls = 0;
+  const notAList = async () => (++calls === 1 ? catalog() : answer(JSON.stringify({ findings: 'lots' })));
+  await assert.rejects(check(empty, durablePath, { apiKey: 'test-only', fetchImpl: notAList }), /findings array/);
 });
 
 const investigated = (path, result) => ({ tool: 'read_file', arguments: { path }, result });

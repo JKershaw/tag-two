@@ -87,5 +87,13 @@
       "at": "2026-09-15T20:12:57.630Z",
       "outcome": "Worked 2026-09-15 (epistemic/control trial, runs 42 to 84). A third durable-state channel was tested: a mechanical report of what the previous run did, produced by tag observe, plus that run's answer, supplied as a user message. Measured across 43 runs replaying six historical commits under two planning primitives. Supplied before any investigation, 11 of 12 runs answered in one request, opened no file, and produced citations of which every one named a file the run had not read. Gated behind a first read, as the durable graph is, 8 of 17 runs still opened no file. Runs given no report at all read 33 files across 6 runs, against 10 files across 10 gated runs. ESTABLISHED: an answer-shaped supply suppresses investigation whether it arrives before or after the first read, and this now holds for node bodies (runs 12, 13), for a graph read as a tracked file (run 18), and for a run report. The same 43 runs compared the shipped planner's decomposition instructions against an alternative asking for established/uncertain/contradicted/worth-investigating plus one bounded next operation. Scored against what the external steward actually did next at each of the six moments, the alternative scored 2 of a possible 12 and the shipped planner scored 2; the alternative named 1 of 6 target discrepancies and the shipped planner 0; the alternative's one success at DP2 paraphrased a paragraph present in the README it read at that commit. At DP3 the answer was written in notes/steward-log.md at that commit and no run in any arm opened that file. REFUTED: asking for an epistemic state and a next-operation choice instead of a task list does not improve which discrepancy is noticed. Evidence: examples/epistemic-control-trial/."
     }
+  ],
+  "inputs": [
+    {
+      "at": "2026-09-15T21:00:56.556Z",
+      "from": "steward",
+      "kind": "observation",
+      "text": "this keeps proposing work we've already done"
+    }
   ]
 }
