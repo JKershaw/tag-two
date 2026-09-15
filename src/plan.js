@@ -120,7 +120,7 @@ export async function plan(objective, directory, {
       // investigated, and never allowed to stand in for investigating it.
       if (prior && !supplied && researched()) {
         supplied = true;
-        messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished.` });
+        messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished. These outcomes are not repository evidence: do not cite them, or any path mentioned in them, unless you have read that file yourself in this investigation.` });
       }
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,
