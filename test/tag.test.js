@@ -103,6 +103,50 @@ test('repository tools read, search and paginate tracked files, not secrets or u
   await assert.rejects(run('history', { path: '--all' }));
 });
 
+test('read_file returns a whole file in one call rather than a fixed line window', async t => {
+  const directory = await fixture(t);
+  // The size of the README the first two dogfood runs each stopped reading at line 200.
+  await writeFile(join(directory, 'long.md'), Array.from({ length: 739 }, (_, i) => `line ${i + 1}`).join('\n') + '\n');
+  execFileSync('git', ['-C', directory, 'add', 'long.md']);
+  const run = await repositoryTools(directory);
+  const whole = await run('read_file', { path: 'long.md' });
+  assert.match(whole, /^1: line 1$/m);
+  assert.match(whole, /^739: line 739$/m);
+  assert.match(whole, /End of long\.md; the whole file from line 1 has been shown\./);
+  assert.doesNotMatch(whole, /PARTIAL READ/);
+  assert.match(await run('read_file', { path: 'README.md' }), /End of README\.md/);
+  assert.match(await run('read_file', { path: 'long.md', startLine: 900 }), /No lines read: long\.md has 740 lines/);
+});
+
+test('a file too large for one read is still bounded and reports an accurate resume point', async t => {
+  const directory = await fixture(t);
+  await writeFile(join(directory, 'huge.txt'), Array.from({ length: 2000 }, () => 'y'.repeat(100)).join('\n') + '\n');
+  execFileSync('git', ['-C', directory, 'add', 'huge.txt']);
+  const run = await repositoryTools(directory);
+  const first = await run('read_file', { path: 'huge.txt' });
+  assert.ok(first.length < 41_000, `expected a bounded read, got ${first.length} characters`);
+  const [, last, total] = first.match(/PARTIAL READ: lines 1-(\d+) of (\d+)\./).map(Number);
+  assert.ok(last > 200, `expected more than the old 200-line window, got ${last}`);
+  // The named resume point must be exact: the next read starts on the first unread line.
+  const resume = Number(first.match(/startLine (\d+) to read them/)[1]);
+  assert.equal(resume, last + 1);
+  const second = await run('read_file', { path: 'huge.txt', startLine: resume });
+  assert.match(second, new RegExp(`^${resume}: y{100}$`, 'm'));
+  assert.match(second, new RegExp(`of ${total}\\.`));
+});
+
+test('read_file stays bounded on long lines and reports the line it stopped at', async t => {
+  const directory = await fixture(t);
+  await writeFile(join(directory, 'wide.txt'), ['a'.repeat(60_000), 'b'.repeat(60_000), 'c'].join('\n') + '\n');
+  execFileSync('git', ['-C', directory, 'add', 'wide.txt']);
+  const run = await repositoryTools(directory);
+  const result = await run('read_file', { path: 'wide.txt' });
+  assert.ok(result.length < 45_000, `expected a bounded read, got ${result.length} characters`);
+  // Stopping mid-file must be reported as partial with an accurate resume point, never silently.
+  assert.match(result, /PARTIAL READ: lines 1-1 of 4\./);
+  assert.match(result, /startLine 2 to read them/);
+});
+
 test('rejects symlink reads, binary content, oversized files and repository subdirectories', async t => {
   const directory = await fixture(t);
   await symlink('README.md', join(directory, 'link.txt'));
@@ -161,9 +205,39 @@ test('missing credentials, network failure, HTTP errors and excessive prices fai
   }
 });
 
+test('a graph wrapped in a markdown fence is unwrapped, but broken JSON is still not repaired', async t => {
+  // A complete-research run produced a valid four-node graph and lost it to three backticks.
+  for (const [content, expected] of [
+    ['```json\n' + JSON.stringify(graph()) + '\n```', null],
+    ['```\n' + JSON.stringify(graph()) + '```', null],
+    [JSON.stringify(graph()), null],
+    ['```json\n{"objective": "Improve the project", nodes: [\n```', /Invalid planner graph/],
+    ['Here is the graph: ' + JSON.stringify(graph()), /Invalid planner graph/],
+  ]) {
+    const directory = await fixture(t);
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls++;
+      if (calls === 1) return catalog();
+      if (calls === 2) return toolAnswer();
+      return answer(content);
+    };
+    if (expected) {
+      await assert.rejects(plan(objective, directory, { apiKey: 'test-only', fetchImpl }), expected);
+      await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+    } else {
+      await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+      const saved = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
+      assert.equal(saved.nodes.length, 2);
+      // The unedited model answer is recorded as returned, fence included.
+      assert.equal(saved.run.investigation.length, 1);
+    }
+  }
+});
+
 test('invalid or unresearched model output is not repaired or retried', async t => {
-  const directory = await fixture(t);
   for (const researched of [true, false]) {
+    const directory = await fixture(t);
     let calls = 0;
     await assert.rejects(plan(objective, directory, {
       apiKey: 'test-only',
@@ -177,6 +251,42 @@ test('invalid or unresearched model output is not repaired or retried', async t 
     assert.equal(calls, researched ? 3 : 2);
     await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
   }
+});
+
+test('a failed run keeps its transcript and rejected answer instead of deleting the evidence', async t => {
+  const directory = await fixture(t);
+  let calls = 0;
+  // The second dogfood run failed validation and left nothing behind to diagnose.
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => {
+      calls++;
+      if (calls === 1) return catalog();
+      if (calls === 2) return toolAnswer();
+      return answer('{"objective":"drifted","summary":"s","nodes":[]}');
+    },
+  }), /failed-run\.json/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.equal(failed.objective, objective);
+  assert.match(failed.failure, /Invalid planner graph/);
+  assert.equal(failed.run.requests, 2);
+  assert.equal(failed.run.costUsd, 0.002);
+  assert.match(failed.run.answer, /drifted/);
+  assert.equal(failed.run.investigation[0].tool, 'read_file');
+  assert.match(failed.run.investigation[0].result, /Project purpose/);
+  await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+  // Preserved evidence is still repository content, so it must stay ignored.
+  execFileSync('git', ['-C', directory, 'check-ignore', '-q', '.tag/failed-run.json']);
+  // A preserved failure must be inspected and moved aside rather than silently overwritten.
+  await assert.rejects(plan(objective, directory, { apiKey: 'test-only', fetchImpl: async () => catalog() }), /already exists/);
+});
+
+test('a run that fails before investigating leaves no directory behind', async t => {
+  const directory = await fixture(t);
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only', fetchImpl: async () => ({ ok: false, status: 500 }),
+  }), /HTTP 500/);
+  await assert.rejects(readFile(join(directory, '.tag', 'failed-run.json')), { code: 'ENOENT' });
 });
 
 test('tool loop is bounded to ten requests', async t => {

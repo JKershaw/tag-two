@@ -7,7 +7,10 @@ const MODEL = 'deepseek/deepseek-chat-v3-0324';
 const API = 'https://openrouter.ai/api/v1';
 const MAX_REQUESTS = 10;
 const MAX_OUTPUT = 4096;
-const MAX_CONTEXT_BYTES = 80_000;
+// Raised from 80,000 after a real run read every file and could not send the request: this
+// repository's own experiment log had grown to 38,322 of 78,755 serialized tool bytes. The
+// bound exists to cap cost, which this does not threaten; it defers the growth problem.
+const MAX_CONTEXT_BYTES = 120_000;
 
 const instructions = `Investigate the repository before proposing a small useful task graph.
 Use list_files, read_file, search, and history yourself; no source excerpts have been selected for you.
@@ -19,6 +22,10 @@ Propose roughly 3–6 tasks (maximum 8), not an exhaustive backlog. Every task m
 advances the objective and cite concrete repository evidence with paths and line numbers where possible.
 Dependencies must mean that a task really requires another task's result. Surface human questions or
 approval needs in reasons. Avoid speculative infrastructure. Do not execute tasks. Stop after planning.
+Before proposing a task, check in the code whether it is already done, and do not propose work the
+repository already implements. Documentation discussing a problem is not evidence that it is unsolved:
+where a document and the code disagree, the code is what exists. Propose work whose absence you
+confirmed in code, not the topics your context discusses most.
 Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
@@ -51,7 +58,10 @@ export async function plan(objective, directory, {
     if (error.code === 'EEXIST') throw new Error('.tag already exists. Preserve or move it before starting another experiment.');
     throw error;
   }
-  let saving = false;
+  await writeFile(join(output, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 });
+  // A failed run is an experimental result: keep what it did and what it answered.
+  const attempt = { model: MODEL, createdAt: new Date().toISOString(), requests: 0, costUsd: 0, investigation: [] };
+  let keep = false;
   try {
     const { data } = await request('/models', {}, fetchImpl);
     const model = data?.find(item => item.id === MODEL);
@@ -67,9 +77,9 @@ export async function plan(objective, directory, {
       { role: 'system', content: instructions },
       { role: 'user', content: objective },
     ];
-    const investigation = [];
-    let costUsd = 0;
+    const investigation = attempt.investigation;
     for (let turn = 1; turn <= MAX_REQUESTS; turn++) {
+      attempt.requests = turn;
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,
         tool_choice: turn === MAX_REQUESTS ? 'none' : 'auto',
@@ -85,7 +95,8 @@ export async function plan(objective, directory, {
         body: JSON.stringify(body),
       }, fetchImpl);
       const cost = response.usage?.cost;
-      costUsd = costUsd !== null && typeof cost === 'number' && Number.isFinite(cost) && cost >= 0 ? costUsd + cost : null;
+      attempt.costUsd = attempt.costUsd !== null && typeof cost === 'number' && Number.isFinite(cost) && cost >= 0
+        ? attempt.costUsd + cost : null;
       const choice = response.choices?.[0];
       const message = choice?.message;
       if (!message || choice.finish_reason === 'length' || response.error) {
@@ -112,22 +123,37 @@ export async function plan(objective, directory, {
       if (!investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result))) {
         throw new Error('The model proposed a graph without reading repository evidence.');
       }
+      attempt.answer = message.content;
+      // A complete, otherwise valid graph was once discarded because the model wrapped it in a
+      // markdown fence. Removing that envelope is not JSON repair: malformed JSON inside it,
+      // a drifted objective or an invalid graph are still rejected exactly as before.
+      const fenced = message.content.trim().match(/^```[a-z]*\s*\n([\s\S]*?)\n?```$/i);
       let graph;
       try {
-        graph = validateGraph(JSON.parse(message.content), objective);
+        graph = validateGraph(JSON.parse(fenced ? fenced[1] : message.content), objective);
       } catch (error) {
         throw new Error(`Invalid planner graph: ${error.message}. No repair or retry was made.`);
       }
-      graph.run = { model: MODEL, createdAt: new Date().toISOString(), requests: turn, costUsd, investigation };
+      graph.run = { model: MODEL, createdAt: attempt.createdAt, requests: turn, costUsd: attempt.costUsd, investigation };
       const html = renderGraph(graph);
-      saving = true;
-      await writeFile(join(output, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 });
+      keep = true;
       await writeFile(join(output, 'graph.json'), JSON.stringify(graph, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await writeFile(join(output, 'graph.html'), html, { flag: 'wx', mode: 0o600 });
       return join(output, 'graph.html');
     }
     throw new Error('Investigation limit reached. No graph saved.');
+  } catch (error) {
+    if (!attempt.investigation.length && attempt.answer === undefined) throw error;
+    // Without this the run's transcript and rejected answer are lost and the failure cannot be diagnosed.
+    const record = { objective, failure: error.message, run: attempt };
+    try {
+      await writeFile(join(output, 'failed-run.json'), JSON.stringify(record, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+      keep = true;
+      throw new Error(`${error.message} The attempt is preserved in .tag/failed-run.json; inspect and move it aside before running again.`);
+    } catch (writeError) {
+      throw writeError.message.includes(error.message) ? writeError : error;
+    }
   } finally {
-    if (!saving) await rm(output, { recursive: true });
+    if (!keep) await rm(output, { recursive: true });
   }
 }

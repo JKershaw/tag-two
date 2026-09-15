@@ -18,7 +18,8 @@ Run the offline tests with `npm test` in that checkout.
 
 The planner uses one OpenRouter model, `deepseek/deepseek-chat-v3-0324`, with
 read-only tools to list/read/search tracked text files and inspect recent commit
-subjects. The model chooses what to investigate; no source excerpts are selected
+subjects. `read_file` returns a whole file in one call, bounded at 40,000
+characters; anything longer reports the exact line to resume from. The model chooses what to investigate; no source excerpts are selected
 in advance. Add new source files to Git before planning. It cannot execute shell
 commands, run tests, modify source, or work on the proposed tasks. Its claims about
 what works are therefore explicitly unverified unless repository evidence supports them.
@@ -43,12 +44,18 @@ content. Existing `.tag` directories are never overwritten: preserve or move a
 previous experiment explicitly before starting another.
 
 The seed allows at most ten model requests, 4,096 output tokens per request and
-80,000 serialized request bytes. It checks model pricing and caps provider prices
+120,000 serialized request bytes. It checks model pricing and caps provider prices
 at $0.50/million input tokens and $1.50/million output tokens, with no per-request
 fee. At these limits, even conservatively counting each request byte as an input
-token leaves the run below $1 (roughly $0.47 before small protocol overhead).
+token leaves the run below $1 (roughly $0.66 before small protocol overhead).
+Observed runs cost well under a cent.
 Unavailable models, higher prices, network errors, exhausted limits or invalid
 graphs stop the run without automatic retries, JSON repair or fabricated tasks.
+A matched markdown fence around the answer is removed before parsing, which is an
+envelope, not repair: malformed JSON, prose around the JSON, a drifted objective and
+any invalid graph are still rejected. A run that fails after investigating anything
+writes `.tag/failed-run.json` with the transcript, the raw answer, the request count
+and the reported cost, and keeps the directory so the failure can be diagnosed.
 An output write failure can leave a partial `.tag` directory; inspect it before
 moving it aside.
 
@@ -95,6 +102,237 @@ mirrored the files it inspected. The next experiment should address that observe
 gap in research and decomposition, not automatically execute this graph or add
 scheduling machinery. No tasks were executed and no extra run was made to obtain
 a more appealing answer.
+
+**Second dogfood attempt (2026-09-15, no graph):** after `read_file` was changed
+to report partial reads, one run of the planner reached the model, investigated the
+repository, and returned an answer that failed graph validation. The planner then
+deleted `.tag`, so the only surviving information was the error string
+(`Expected the original objective, a research summary, and 1–8 nodes.`). The
+transcript and the rejected answer were gone, and a real paid run taught us nothing
+about why it failed.
+
+That is the observed need behind the next change: a failed run now writes
+`.tag/failed-run.json` with the objective, failure message, request count, reported
+cost, full investigation transcript and raw model answer, and keeps the directory.
+No repair, retry or fallback was added — only the ability to see what happened.
+
+**Second completed dogfood run (2026-09-15):** the same objective was run once more,
+because the previous attempt produced no graph to assess. DeepSeek V3 0324 made three
+requests at a reported total cost of **$0.004499**, reading `package.json` and all
+four implementation and test files, plus the first 200 lines of the README. The
+unedited outputs are preserved in
+[`examples/second-dogfood/graph.json`](examples/second-dogfood/graph.json) and
+[`examples/second-dogfood/graph.html`](examples/second-dogfood/graph.html).
+
+The graph proposed five tasks:
+
+1. Improve research depth and completeness.
+2. Enforce stricter validation of evidence citations (depends on 1).
+3. Clarify the research summary (depends on 1).
+4. Expand test coverage for runtime behaviour (depends on 2).
+5. Document lessons from the first dogfood run (depends on 1).
+
+**Assessment: the change failed its purpose, and the better-looking graph is
+misleading.** The tool change worked exactly as designed — the model was told
+`PARTIAL READ: lines 1-200 of 739. The remaining 539 lines of README.md have NOT
+been shown. Call read_file with path "README.md" and startLine 201 to read them.`
+and an equivalent notice for `test/tag.test.js`. It paginated neither, with seven
+of ten requests unused. **Telling the model its view is incomplete, in explicit
+terms that name the exact next call, did not make it finish reading.** The
+research gap identified after the first run is therefore still open, and the
+obvious cheap fix for it is now ruled out by evidence rather than by opinion.
+
+The proposed tasks read as improvements rather than as one review task per source
+file, and two of them cite specific line ranges instead of whole files. But this is
+not better research. The five tasks correspond almost one-to-one to sentences in the
+human assessment of the first run written at `README.md:83-97`, which had moved into
+the first 200 lines the agent did read: premature reading, broad evidence citations,
+an unclear summary, unverified runtime behaviour, undocumented lessons. The agent is
+still mirroring the most salient text in its context. In the first run that text was
+a file listing; in the second it was a human's critique. The apparent improvement
+came from a human writing the analysis into the input, not from the agent producing
+it.
+
+The sharpest single observation: the agent proposed *"Improve research depth and
+completeness — ensures the agent reads the entire README and other key files"* in the
+same request in which it declined to read the rest of the README. It can name the
+weakness it is exhibiting without that changing its behaviour.
+
+What this rules out, and what remains open:
+
+- Ruled out: passive truncation notes, and explicit directive ones, as a way to get
+  complete research. Both were tried against a real run and both failed.
+- Still open: whether the system should guarantee complete reading itself rather than
+  asking the model to, and whether complete research actually improves decomposition
+  or merely changes which text gets mirrored. These are separate questions and the
+  second cannot be answered until the first is.
+- Not evidenced: any need for scheduling, execution, retries, model routing or
+  multi-generation machinery. Nothing in either run pointed at those.
+
+Both runs used the objective exactly once each. No run was repeated to obtain a more
+appealing graph, no proposed task was executed, and the archived artifacts are
+unedited.
+
+**Third dogfood run (2026-09-15, no graph):** with whole-file reads in place, the
+planner achieved complete research for the first time — all 809 README lines and
+every implementation and test file, each confirmed complete in the transcript. It
+then returned its graph wrapped in ` ```json ` fences and the planner discarded it.
+The preserved record in
+[`examples/third-dogfood/failed-run.json`](examples/third-dogfood/failed-run.json)
+shows the content inside the fence parses and passes `validateGraph` unchanged: three
+backticks were the only thing between the run and a four-node graph. The planner now
+removes a matched fence before parsing.
+
+This run also justified the previous change twice over. Without `failed-run.json`
+the cause would again have been invisible, and the record proved the whole-file
+change had worked before any graph existed to show it.
+
+**Fourth dogfood run (2026-09-15):** the same objective, run once more, produced a
+graph at a reported cost of **$0.006458** — complete research costs roughly 60% more
+than the first run's partial reading, and still under a cent. The unedited outputs
+are in [`examples/fourth-dogfood/graph.json`](examples/fourth-dogfood/graph.json)
+and [`examples/fourth-dogfood/graph.html`](examples/fourth-dogfood/graph.html).
+
+The graph proposed five tasks:
+
+1. Ensure complete research before decomposition.
+2. Improve evidence citations in task proposals (depends on 1).
+3. Clarify the research summary in the graph (depends on 1).
+4. Expand test coverage for runtime behaviour (depends on 2).
+5. Document lessons from the first dogfood run (depends on 1).
+
+**Assessment: complete research was achieved and decomposition did not improve.**
+This answers the question left open after the second run, and the answer is the
+unwelcome one. The transcript shows every file read to its end, so the research gap
+identified after the first run is closed as a mechanical matter. The tasks are
+nonetheless the same shape as before: six of the graph's ten evidence citations point
+into this README's own assessment prose rather than at code, and the proposals restate
+the human critique written here. Guaranteeing complete research changed which text got
+mirrored. It did not produce independent analysis.
+
+The clearest evidence is the first task. *"Ensure complete research before
+decomposition"* proposes work that was already finished in the code the agent had just
+read in full — `src/repository.js` returns whole files, and `test/tag.test.js` contains
+a test named for that behaviour. At the time of the run this README still described
+that gap as open, so the obvious inference was that stale prose had outranked code
+state. **The fifth run tested that inference directly and refuted it — see below.**
+The proposal survives accurate documentation, so staleness was not the cause.
+
+What is now established:
+
+- Complete research is a solved mechanical problem, and the system must guarantee it
+  rather than ask: passive notes, explicit directives naming the next call, and finally
+  removing the window were tried in that order, and only the last worked.
+- Complete research is not sufficient for useful decomposition. The mirroring behaviour
+  survived it intact.
+- Preserving failed runs earned its place immediately: two of the five answers so far
+  failed on output format, and the one attempt whose evidence was deleted is the only
+  failure still unexplained.
+- Still open: whether the mirroring is reachable at all through instructions and
+  context, or whether it needs a different operation — for example asking the agent to
+  reconcile written claims against code before proposing work. Nothing yet justifies
+  execution, scheduling, routing or multi-generation machinery; no run has pointed at
+  them.
+
+Each objective was run exactly once per change. No run was repeated to obtain a more
+appealing graph, no proposed task was executed, and every archived artifact is
+unedited, including the two failures.
+
+**Fifth dogfood run (2026-09-15):** a controlled repeat. No source file changed
+between the fourth run and this one — only this README, which was corrected so that
+it no longer described complete research as an open problem. The unedited outputs are
+in [`examples/fifth-dogfood/graph.json`](examples/fifth-dogfood/graph.json) and
+[`examples/fifth-dogfood/graph.html`](examples/fifth-dogfood/graph.html), at a
+reported cost of **$0.006593**.
+
+**Assessment: the stale-documentation explanation is refuted, and the result is worse
+than that explanation would have been.** The graph's five node ids and every
+dependency between them are identical to the fourth run's, and the split of evidence
+citations is unchanged at six into this README and four into code. Correcting the
+documentation changed nothing.
+
+*"Ensure complete research before decomposition"* is still proposed first, and its
+own evidence now reads:
+
+> `src/repository.js:78-95 — Implementation of whole-file reads to avoid partial research.`
+
+The agent cited the finished implementation of the work as the reason to do the work.
+It is not failing to notice that the code contradicts the task; it read the code,
+described it accurately, and proposed the task anyway. So the mirroring is not caused
+by incomplete research, and not by stale prose either. Both plausible causes have now
+been tested against real runs and eliminated. What remains is that the agent is
+selecting the most discussed topics in its context and restating them as tasks,
+without checking whether the work already exists.
+
+Two smaller observations from the same evidence:
+
+- Across five runs the agent has never once used `search` or `history`. Every run is
+  the same shape: list the files, read them, answer. Half the investigation tools it
+  is offered have never been exercised.
+- Runs four and five produced the same graph structure from a materially different
+  README, so at this temperature the planner is stable enough that differences between
+  runs can be attributed to input changes rather than sampling noise. That is what
+  makes these comparisons meaningful, and it is the reason no run needed repeating.
+
+This is the current edge of the experiment. The next change should address the one
+behaviour now isolated by elimination — that proposed work is never checked against
+what already exists — rather than research depth, documentation accuracy, output
+format or any orchestration machinery, all of which have now been ruled out by runs
+rather than by argument.
+
+**Sixth dogfood run (2026-09-15, no graph):** the run testing the new instruction read
+every file and then failed at the request-byte guard before sending. The preserved
+record in
+[`examples/sixth-dogfood/failed-run.json`](examples/sixth-dogfood/failed-run.json)
+shows this repository's own experiment log had reached 38,322 of 78,755 serialized
+tool bytes — 49% of the research payload — after growing from 696 to 921 README lines
+across six experiments.
+
+**Complete reading and an append-only log are in direct tension, and every experiment
+makes the next one harder to run.** This is a self-hosting problem found by running
+rather than by design: the document that tells the agent what the project is for is
+also the document crowding out its capacity to investigate. The budget was raised to
+120,000 bytes, which the cost cap comfortably allows, and that defers the problem
+rather than solving it. Separating the log from the statement of purpose is the
+structural fix and is deliberately not taken yet, because what the agent would then
+choose to read is an untested assumption.
+
+**Seventh dogfood run (2026-09-15):** the same objective at a reported cost of
+**$0.006827**, archived unedited in
+[`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json) and
+[`examples/seventh-dogfood/graph.html`](examples/seventh-dogfood/graph.html).
+
+The graph proposed four tasks:
+
+1. Enhance research quality to avoid mirroring.
+2. Verify gaps before proposing tasks (depends on 1).
+3. Expand tool usage beyond file reading (depends on 1).
+4. Clarify the research summary in the graph (depends on 2).
+
+**Assessment: the first real improvement, and a smaller one than it looks.** Against
+the identical fourth and fifth runs, four things changed. *"Ensure complete research
+before decomposition"* — the already-completed task proposed twice while citing its own
+finished implementation — is gone, which is exactly what the instruction targeted. The
+graph shrank from five tasks to four. Evidence citations moved from six-to-four in
+favour of this README to an even four-and-four. And the agent read `bin/tag.js`, a file
+neither previous run opened.
+
+The third task is the most interesting thing any run has produced. *"Expand tool usage
+beyond file reading"* observes that `search` and `history` have never been used, and
+pairs that with `src/repository.js:96-117`, where both are implemented. It is a real
+gap, correctly located in code, and it is about the agent's own behaviour.
+
+But the mirroring is not solved. The remaining README citations point at this
+assessment section, and the first two tasks restate its analysis. There is now a trap
+worth naming plainly: **the more carefully a human writes the assessment here, the
+better the graph looks, without the agent having done any more work.** A paraphrase of
+good analysis is hard to distinguish from good analysis. This is the strongest reason
+to run the planner against a repository that is not tag-two, where no one has written
+the answer into the input, before concluding that decomposition has improved.
+
+What changed in this cycle: instructions can remove a specific, nameable defect —
+proposing work that already exists — where notes and warnings could not remove a
+general one. That is a narrower and more useful result than "prompting works".
 
 ---
 
