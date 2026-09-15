@@ -57,11 +57,44 @@ unedited graph for usefulness rather than rerunning until the answer looks good.
 
 **First attempt (2026-09-15):** the command above stopped at the model-catalog
 request because `openrouter.ai` could not be resolved (`ENOTFOUND`) in the build
-environment. No model inference request was made, no graph was generated, and
-the planner was not rerun. The offline tests demonstrate the mechanics, not the
-quality of a real decomposition. The next human action is to provide network
-access to OpenRouter and perform the first actual planning run; usefulness remains
-an open question.
+environment. No model inference request was made and no graph was generated.
+
+**First completed dogfood run (2026-09-15):** after the domain allowlist was
+updated, one run of the unchanged planner succeeded. DeepSeek V3 0324 made three
+model requests at a reported total cost of **$0.00399975**. It listed files and
+read the first 200 lines of the README, all three implementation modules, and
+the test file. It did not paginate the README, inspect history, or run tests.
+
+The unedited outputs are preserved in
+[`examples/first-dogfood/graph.json`](examples/first-dogfood/graph.json) and
+[`examples/first-dogfood/graph.html`](examples/first-dogfood/graph.html).
+Download/open the HTML locally to inspect it. These are explicitly archived
+experiment artifacts, including the original repository investigation transcript;
+normal `.tag` output remains ignored.
+
+The graph proposed five tasks:
+
+1. Investigate README.md for project purpose and principles.
+2. Review graph validation and rendering logic (depends on 1).
+3. Examine the planning module for constraints and behavior (depends on 1).
+4. Test repository tools for file handling and security (depends on 1).
+5. Analyze the test suite for coverage and gaps (depends on 2, 3, and 4).
+
+**Assessment: the mechanics work, but this is not yet a useful decomposition.**
+Most tasks repeat inspection the planner already performed, without identifying
+a demonstrated weakness or a concrete improvement to the central experiment.
+The dependencies mostly express review order rather than necessary task results.
+The summary does not clearly distinguish inspected tests from verified runtime
+behaviour, or identify the remaining uncertainties. Its evidence citations are
+broad file ranges rather than observations that justify specific work.
+
+This run exposes a research-quality problem, not a need for more orchestration:
+the agent stopped reading the README before reaching the lessons, scope limits
+and first-success criteria, despite having requests left. It then largely
+mirrored the files it inspected. The next experiment should address that observed
+gap in research and decomposition, not automatically execute this graph or add
+scheduling machinery. No tasks were executed and no extra run was made to obtain
+a more appealing answer.
 
 ---
 
