@@ -1,0 +1,73 @@
+{
+  "id": "adopt-evidence",
+  "statement": "The project's stated doctrine is that a recorded outcome is evidence about work that really happened and must outlive the node that proposed it. `tag adopt` replaces a durable graph wholesale. Establish whether any sequence of documented commands exists after which a recorded outcome or input is present before an adopt and absent after it. If one exists, produce a runnable reproduction.",
+  "completion": "A runnable command that exits 0 only when it has actually demonstrated the loss — the recorded item present before the adopt and absent after — or, if no such sequence exists, a command that exercises the candidate paths and shows the evidence surviving all of them. A reading of the source is not sufficient on its own.",
+  "reserved": [
+    "Whether any primitive built during this episode is adopted into tag-two permanently."
+  ],
+  "intent": [
+    {
+      "at": "2026-09-15T21:38:53.571Z",
+      "from": "harbour",
+      "kind": "constraint",
+      "text": "Use only commands the README documents. A loss that requires hand-editing a graph file is not a finding."
+    }
+  ],
+  "operations": [
+    {
+      "at": "2026-09-15T21:39:17.427Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `sh tasks/adopt-evidence.repro.sh` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ sh tasks/adopt-evidence.repro.sh",
+        "exit status 0",
+        "stdout (last lines):\nbefore adopt: new graph holds 1 outcome(s) and 1 input(s); durable graph holds 0 outcome(s)\nAdopted 5 nodes, carried 0 recorded outcomes (0 for retired nodes); re-rendered /tmp/tmp.P7cqp6gJl8/durable.html\nafter adopt: durable graph holds 0 outcome(s) and 0 input(s)\nREPRODUCED: 1 recorded outcome(s) and 1 recorded input(s) were present before the adopt and are absent after it."
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-15T21:39:41.121Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `sh tasks/adopt-evidence.repro-2.sh` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ sh tasks/adopt-evidence.repro-2.sh",
+        "exit status 0",
+        "stdout (last lines):\nAdopted 5 nodes, carried 1 recorded outcomes (1 for retired nodes); re-rendered /tmp/tmp.C2Giuu2zg2/durable.html\nafter adopt: durable graph's own outcome kept=yes, replacement's outcome kept=no\nREPRODUCED: when both graphs carry evidence, the durable graph's is kept and the replacement's is dropped."
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-15T21:40:04.286Z",
+      "by": "steward",
+      "operation": "read",
+      "question": "What do the two reproductions establish, and can the machine settle what should happen next?",
+      "result": "Two reachable losses are established by executed commands, both using only documented commands on unedited archived planner outputs. When the durable graph holds no recorded evidence, the replacement's outcomes and inputs are deleted. When both hold evidence, the durable graph's is kept and the replacement's is dropped. In the first case adopt prints 'carried 0 recorded outcomes' while discarding one. What should happen instead is not settleable by investigation: refusing, merging and documenting a precondition are all defensible and they mean different things about what a durable record is.",
+      "evidence": [
+        "operation 1: REPRODUCED, 1 outcome and 1 input present before adopt and absent after",
+        "operation 2: REPRODUCED, durable kept, replacement dropped"
+      ]
+    }
+  ],
+  "state": "needs-human",
+  "openedAt": "2026-09-15T21:38:53.495Z",
+  "question": {
+    "at": "2026-09-15T21:41:04.465Z",
+    "decision": "What should `tag adopt` do when the graph being adopted carries recorded outcomes or inputs of its own?",
+    "why": "Investigation has settled what happens: two reachable losses are reproduced by executed commands. It cannot settle what should happen, because the three available answers are not more or less correct — they say different things about what a durable record is. Refusing treats the durable graph as the only legitimate home for evidence and makes a real documented sequence fail. Merging treats evidence as belonging to the work rather than to a file, which is the doctrine the project already states for node ids, but it changes what a durable graph contains after an adopt and admits duplicates. Documenting the precondition changes nothing and accepts that the sequence silently loses evidence. Choosing among those is a product judgement about the meaning of the record, and the project's own rule is that a mechanism needs a failure that demonstrates it — the failure is demonstrated, the meaning is not.",
+    "continues": "The chosen behaviour is implemented as the smallest change to src/adopt.js, both reproductions are re-run as recorded verifications, and this task is closed on that evidence. If the answer is to document the precondition, the README sentence changes instead and the reproductions stay as the record of why.",
+    "options": [
+      "Refuse: adopt fails when the replacement carries outcomes or inputs the durable graph does not have, naming them. Nothing is lost and nothing is merged, but a documented sequence (record on a fresh graph, then adopt) now stops with an error the human must resolve by hand.",
+      "Merge: carry the durable graph's evidence and the replacement's, in time order. Nothing is lost. It admits duplicate outcomes when the same work is recorded on both graphs, and adopt stops being a wholesale replacement of everything except the carried record.",
+      "Document: leave adopt as it is and state in the README that a graph carrying recorded evidence must not be adopted. No code changes, the reproductions stand as the record, and the loss stays reachable by anyone who does not read that sentence."
+    ],
+    "evidence": [
+      "operation 1 (verify by tag verify): It exited 0. The command ran and reported success.",
+      "operation 2 (verify by tag verify): It exited 0. The command ran and reported success.",
+      "operation 3 (read by steward): Two reachable losses are established by executed commands, both using only documented commands on unedited archived planner outputs. When the durable graph holds no recorded evidence, the replacement's outcomes and inputs are deleted. When both hold evidence, the durable graph's is kept and the replacement's is dropped. In the first case adopt prints 'carried 0 recorded outcomes' while discarding one. What should happen instead is not settleable by investigation: refusing, merging and documenting a precondition are all defensible and they mean different things about what a durable record is."
+    ]
+  }
+}

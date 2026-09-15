@@ -54,6 +54,15 @@ export function validateTask(task) {
   if ((task.state === 'complete') !== (task.closed !== undefined)) {
     throw new Error('A task is complete exactly when it records what closed it.');
   }
+  if (task.question !== undefined && (!nonempty(task.question.at) || !nonempty(task.question.decision)
+    || !nonempty(task.question.why) || !nonempty(task.question.continues)
+    || !Array.isArray(task.question.options) || task.question.options.length < 2 || !task.question.options.every(nonempty)
+    || !Array.isArray(task.question.evidence) || !task.question.evidence.every(nonempty))) {
+    throw new Error('A question must record {at, decision, why, continues, options, evidence} with at least two options.');
+  }
+  if (task.state === 'needs-human' && task.question === undefined) {
+    throw new Error('A task needs a human exactly when it records what it is asking.');
+  }
   return task;
 }
 
@@ -112,10 +121,18 @@ export function showTask(task) {
     operations.length
       ? `Operations performed (${operations.length}):\n${operations.join('\n')}`
       : 'No operations have been performed.',
+    task.question
+      ? [`Control returned to a human ${task.question.at}${task.state === 'needs-human' ? ' and is still there.' : '.'}`,
+        `  Decision required: ${task.question.decision}`,
+        `  Why a machine cannot settle it: ${task.question.why}`,
+        `  Resting on:\n${task.question.evidence.map(line => `    - ${line}`).join('\n')}`,
+        `  Options:\n${task.question.options.map(option => `    - ${option}`).join('\n')}`,
+        `  What continues once it is answered: ${task.question.continues}`].join('\n')
+      : '',
     task.closed
       ? `Closed ${task.closed.at}: ${task.closed.statement}\nRelied on:\n${task.closed.relied.map(line => `  - ${line}`).join('\n')}`
       : `Not closed. Control sits with whoever is reading this; the task is ${task.state}.`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
 
 // `tag task op` will write down whatever it is told. Handed "npm test: 9999 passing, 0 failing,
@@ -156,20 +173,55 @@ export async function verifyTask(path, command, { now = () => new Date().toISOSt
 // than trusted — the same discipline the evidence-citation guard and `tag check` already use.
 // What a machine can establish is that the cited operations exist, really ran, and really exited
 // zero. Whether they are the right checks for this completion condition is a human reading.
+// Citations are the same in a close and in a question: the point of naming an operation is that
+// somebody can look it up, so it is looked up here rather than taken on trust.
+function relyOn(task, cited, { ran = true } = {}) {
+  const relied = [];
+  for (const reference of cited) {
+    const index = Number(reference);
+    const operation = Number.isInteger(index) && index >= 1 ? task.operations[index - 1] : undefined;
+    if (!operation) throw new Error(`Operation ${reference} does not exist on ${task.id}. Nothing was changed.`);
+    if (ran && operation.exit === undefined) throw new Error(`Operation ${reference} (${operation.operation} by ${operation.by}) ran no command, so it establishes nothing. Nothing was changed.`);
+    if (ran && operation.exit !== 0) throw new Error(`Operation ${reference} exited ${operation.exit}. A failing check does not close a task. Nothing was changed.`);
+    relied.push(ran ? `operation ${index}: ${operation.evidence[0]} \u2192 ${operation.evidence[1]}`
+      : `operation ${index} (${operation.operation} by ${operation.by}): ${operation.result}`);
+  }
+  return relied;
+}
+
+// Across the whole previous trial tag-two never once said that something needed a human, including
+// when its own durable graph became exhausted; the steward found that out by running a check and
+// reading the output. This episode reached the same wall from the other side: two reachable losses
+// of recorded evidence were established mechanically, and what `adopt` should do instead is not
+// settleable by investigation — refusing, merging and documenting a precondition are all defensible
+// and mean different things about what a durable record is. Returning control is an operation, so
+// it is recorded like one: the decision, why a machine cannot settle it, the evidence it rests on,
+// the options as they really are, and what will continue once the answer arrives.
+export async function askTask(path, { decision, why, continues, options, cited },
+  { now = () => new Date().toISOString() } = {}) {
+  for (const [name, value] of [['decision', decision], ['why', why], ['what continues after the answer', continues]]) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`A ${name} is required.`);
+  }
+  if (!Array.isArray(options) || options.length < 2) throw new Error('Give at least two real options; one option is a decision already taken.');
+  const task = await readTask(path);
+  if (task.state === 'complete') throw new Error(`${task.id} is already complete.`);
+  if (task.question) throw new Error(`${task.id} is already waiting on an answer. Answer it before asking again.`);
+  task.state = 'needs-human';
+  task.question = {
+    at: now(), decision: decision.trim(), why: why.trim(), continues: continues.trim(),
+    options: options.map(option => option.trim()), evidence: relyOn(task, cited, { ran: false }),
+  };
+  await writeTask(path, task);
+  return task.question;
+}
+
 export async function closeTask(path, statement, cited, { now = () => new Date().toISOString() } = {}) {
   if (typeof statement !== 'string' || !statement.trim()) throw new Error('A closing statement is required.');
   const task = await readTask(path);
   if (task.state === 'complete') throw new Error(`${task.id} is already complete.`);
   if (!cited.length) throw new Error('Name the verification(s) that establish completion; a close with no evidence is a claim.');
-  const relied = [];
-  for (const reference of cited) {
-    const index = Number(reference);
-    const operation = Number.isInteger(index) && index >= 1 ? task.operations[index - 1] : undefined;
-    if (!operation) throw new Error(`Operation ${reference} does not exist on ${task.id}. Nothing was closed.`);
-    if (operation.exit === undefined) throw new Error(`Operation ${reference} (${operation.operation} by ${operation.by}) ran no command, so it establishes nothing. Nothing was closed.`);
-    if (operation.exit !== 0) throw new Error(`Operation ${reference} exited ${operation.exit}. A failing check does not close a task. Nothing was closed.`);
-    relied.push(`operation ${index}: ${operation.evidence[0]} \u2192 ${operation.evidence[1]}`);
-  }
+  if (task.state === 'needs-human') throw new Error(`${task.id} is waiting on a human decision. Answer it before closing.`);
+  const relied = relyOn(task, cited);
   task.state = 'complete';
   task.closed = { at: now(), statement: statement.trim(), relied };
   await writeTask(path, task);

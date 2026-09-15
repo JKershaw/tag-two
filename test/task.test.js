@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, validateTask } from '../src/task.js';
+import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask, validateTask } from '../src/task.js';
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'tag-task-'));
@@ -107,6 +107,56 @@ test('a task cannot claim completion without recording what closed it', async ()
   assert.throws(() => validateTask({ ...base, state: 'open', closed: { at: 'x', statement: 'y', relied: ['z'] } }),
     /complete exactly when it records what closed it/);
   assert.throws(() => validateTask({ ...base, state: 'shipped' }), /open, needs-human or complete/);
+});
+
+const question = {
+  decision: 'What should adopt do with evidence carried on the replacement graph?',
+  why: 'Refusing, merging and documenting a precondition are all defensible and mean different things about what a durable record is.',
+  continues: 'The chosen fix is implemented and the reproduction is re-run.',
+  options: ['Refuse the adopt.', 'Merge both sets of evidence.'],
+};
+
+test('returning control records what is being asked and why', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  const asked = await askTask(path, { ...question, cited: ['1'] });
+  assert.equal(asked.options.length, 2);
+  assert.match(asked.evidence[0], /operation 1 \(verify by tag verify\)/);
+  const task = await readTask(path);
+  assert.equal(task.state, 'needs-human');
+  const shown = showTask(task);
+  assert.match(shown, /Control returned to a human .* and is still there\./);
+  assert.match(shown, /Why a machine cannot settle it/);
+  assert.match(shown, /What continues once it is answered/);
+});
+
+test('a question needs more than one option and evidence that exists', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  await assert.rejects(askTask(path, { ...question, options: ['Just do it.'], cited: ['1'] }),
+    /at least two real options/);
+  await assert.rejects(askTask(path, { ...question, cited: ['9'] }), /does not exist/);
+  assert.equal((await readTask(path)).state, 'open');
+});
+
+test('a task waiting on a human is not closed behind its back', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  await askTask(path, { ...question, cited: ['1'] });
+  await assert.rejects(closeTask(path, 'done anyway', ['1']), /waiting on a human decision/);
+  await assert.rejects(askTask(path, { ...question, cited: ['1'] }), /already waiting on an answer/);
+  assert.equal((await readTask(path)).state, 'needs-human');
+});
+
+test('a task needs a human exactly when it records what it is asking', async () => {
+  const base = {
+    id: 'example-task', statement: 's', completion: 'c', reserved: [], intent: [], operations: [],
+    openedAt: '2026-01-01T00:00:00.000Z',
+  };
+  assert.throws(() => validateTask({ ...base, state: 'needs-human' }),
+    /needs a human exactly when it records what it is asking/);
+  assert.throws(() => validateTask({ ...base, state: 'needs-human', question: { at: 'x', decision: 'd', why: 'w', continues: 'c', options: ['only one'], evidence: [] } }),
+    /at least two options/);
 });
 
 test('a task file that is not a task is refused', async t => {
