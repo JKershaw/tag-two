@@ -198,8 +198,8 @@ test('missing credentials, network failure, HTTP errors and excessive prices fai
 });
 
 test('invalid or unresearched model output is not repaired or retried', async t => {
-  const directory = await fixture(t);
   for (const researched of [true, false]) {
+    const directory = await fixture(t);
     let calls = 0;
     await assert.rejects(plan(objective, directory, {
       apiKey: 'test-only',
@@ -213,6 +213,42 @@ test('invalid or unresearched model output is not repaired or retried', async t 
     assert.equal(calls, researched ? 3 : 2);
     await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
   }
+});
+
+test('a failed run keeps its transcript and rejected answer instead of deleting the evidence', async t => {
+  const directory = await fixture(t);
+  let calls = 0;
+  // The second dogfood run failed validation and left nothing behind to diagnose.
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => {
+      calls++;
+      if (calls === 1) return catalog();
+      if (calls === 2) return toolAnswer();
+      return answer('{"objective":"drifted","summary":"s","nodes":[]}');
+    },
+  }), /failed-run\.json/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.equal(failed.objective, objective);
+  assert.match(failed.failure, /Invalid planner graph/);
+  assert.equal(failed.run.requests, 2);
+  assert.equal(failed.run.costUsd, 0.002);
+  assert.match(failed.run.answer, /drifted/);
+  assert.equal(failed.run.investigation[0].tool, 'read_file');
+  assert.match(failed.run.investigation[0].result, /Project purpose/);
+  await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+  // Preserved evidence is still repository content, so it must stay ignored.
+  execFileSync('git', ['-C', directory, 'check-ignore', '-q', '.tag/failed-run.json']);
+  // A preserved failure must be inspected and moved aside rather than silently overwritten.
+  await assert.rejects(plan(objective, directory, { apiKey: 'test-only', fetchImpl: async () => catalog() }), /already exists/);
+});
+
+test('a run that fails before investigating leaves no directory behind', async t => {
+  const directory = await fixture(t);
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only', fetchImpl: async () => ({ ok: false, status: 500 }),
+  }), /HTTP 500/);
+  await assert.rejects(readFile(join(directory, '.tag', 'failed-run.json')), { code: 'ENOENT' });
 });
 
 test('tool loop is bounded to ten requests', async t => {

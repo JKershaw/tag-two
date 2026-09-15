@@ -51,7 +51,10 @@ export async function plan(objective, directory, {
     if (error.code === 'EEXIST') throw new Error('.tag already exists. Preserve or move it before starting another experiment.');
     throw error;
   }
-  let saving = false;
+  await writeFile(join(output, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 });
+  // A failed run is an experimental result: keep what it did and what it answered.
+  const attempt = { model: MODEL, createdAt: new Date().toISOString(), requests: 0, costUsd: 0, investigation: [] };
+  let keep = false;
   try {
     const { data } = await request('/models', {}, fetchImpl);
     const model = data?.find(item => item.id === MODEL);
@@ -67,9 +70,9 @@ export async function plan(objective, directory, {
       { role: 'system', content: instructions },
       { role: 'user', content: objective },
     ];
-    const investigation = [];
-    let costUsd = 0;
+    const investigation = attempt.investigation;
     for (let turn = 1; turn <= MAX_REQUESTS; turn++) {
+      attempt.requests = turn;
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,
         tool_choice: turn === MAX_REQUESTS ? 'none' : 'auto',
@@ -85,7 +88,8 @@ export async function plan(objective, directory, {
         body: JSON.stringify(body),
       }, fetchImpl);
       const cost = response.usage?.cost;
-      costUsd = costUsd !== null && typeof cost === 'number' && Number.isFinite(cost) && cost >= 0 ? costUsd + cost : null;
+      attempt.costUsd = attempt.costUsd !== null && typeof cost === 'number' && Number.isFinite(cost) && cost >= 0
+        ? attempt.costUsd + cost : null;
       const choice = response.choices?.[0];
       const message = choice?.message;
       if (!message || choice.finish_reason === 'length' || response.error) {
@@ -112,22 +116,33 @@ export async function plan(objective, directory, {
       if (!investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result))) {
         throw new Error('The model proposed a graph without reading repository evidence.');
       }
+      attempt.answer = message.content;
       let graph;
       try {
         graph = validateGraph(JSON.parse(message.content), objective);
       } catch (error) {
         throw new Error(`Invalid planner graph: ${error.message}. No repair or retry was made.`);
       }
-      graph.run = { model: MODEL, createdAt: new Date().toISOString(), requests: turn, costUsd, investigation };
+      graph.run = { model: MODEL, createdAt: attempt.createdAt, requests: turn, costUsd: attempt.costUsd, investigation };
       const html = renderGraph(graph);
-      saving = true;
-      await writeFile(join(output, '.gitignore'), '*\n', { flag: 'wx', mode: 0o600 });
+      keep = true;
       await writeFile(join(output, 'graph.json'), JSON.stringify(graph, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
       await writeFile(join(output, 'graph.html'), html, { flag: 'wx', mode: 0o600 });
       return join(output, 'graph.html');
     }
     throw new Error('Investigation limit reached. No graph saved.');
+  } catch (error) {
+    if (!attempt.investigation.length && attempt.answer === undefined) throw error;
+    // Without this the run's transcript and rejected answer are lost and the failure cannot be diagnosed.
+    const record = { objective, failure: error.message, run: attempt };
+    try {
+      await writeFile(join(output, 'failed-run.json'), JSON.stringify(record, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
+      keep = true;
+      throw new Error(`${error.message} The attempt is preserved in .tag/failed-run.json; inspect and move it aside before running again.`);
+    } catch (writeError) {
+      throw writeError.message.includes(error.message) ? writeError : error;
+    }
   } finally {
-    if (!saving) await rm(output, { recursive: true });
+    if (!keep) await rm(output, { recursive: true });
   }
 }
