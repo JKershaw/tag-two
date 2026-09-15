@@ -1,0 +1,306 @@
+{
+  "totalUsd": 0.12763681,
+  "runs": [
+    {
+      "dp": "DP1",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.00085325,
+      "failure": null
+    },
+    {
+      "dp": "DP1",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.00439475,
+      "failure": null
+    },
+    {
+      "dp": "DP4",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.00659203,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.0064617500000000005,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.009751349999999999,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.0071112499999999995,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "A0",
+      "replicate": 1,
+      "costUsd": 0.01038975,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.00075852,
+      "failure": null
+    },
+    {
+      "dp": "DP4",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.00087324,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.00096456,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.00103032,
+      "failure": null
+    },
+    {
+      "dp": "DP1",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.00120612,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "A",
+      "replicate": 1,
+      "costUsd": 0.007615,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.00068482,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP1",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.0007689600000000001,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP4",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.00283318,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.0030214,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.00298366,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "B0",
+      "replicate": 1,
+      "costUsd": 0.00598554,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.00065178,
+      "failure": null
+    },
+    {
+      "dp": "DP4",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.0007377,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.00077502,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.00081558,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "B",
+      "replicate": 1,
+      "costUsd": 0.0008406,
+      "failure": null
+    },
+    {
+      "dp": "DP1",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.0006215400000000001,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP3",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.0006684,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP2",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.000531,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP4",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.00309828,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.0031275,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "Ag",
+      "replicate": 1,
+      "costUsd": 0.00318498,
+      "failure": null
+    },
+    {
+      "dp": "DP1",
+      "arm": "Ag",
+      "replicate": 2,
+      "costUsd": 0.00064938,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP1",
+      "arm": "B0",
+      "replicate": 2,
+      "costUsd": 0.00163314,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "B0",
+      "replicate": 2,
+      "costUsd": 0.0035565600000000003,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "Ag",
+      "replicate": 2,
+      "costUsd": 0.003498,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "Ag",
+      "replicate": 2,
+      "costUsd": 0.0074347499999999995,
+      "failure": null
+    },
+    {
+      "dp": "DP1",
+      "arm": "Ag",
+      "replicate": 3,
+      "costUsd": 0.0006412799999999999,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP2",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.00078,
+      "failure": "No answer within the request limit."
+    },
+    {
+      "dp": "DP1",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.00078972,
+      "failure": null
+    },
+    {
+      "dp": "DP6",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.00080928,
+      "failure": null
+    },
+    {
+      "dp": "DP3",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.00367404,
+      "failure": null
+    },
+    {
+      "dp": "DP4",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.00303972,
+      "failure": null
+    },
+    {
+      "dp": "DP5",
+      "arm": "Bg",
+      "replicate": 1,
+      "costUsd": 0.008432750000000001,
+      "failure": null
+    },
+    {
+      "dp": "DP2",
+      "arm": "Bg",
+      "replicate": 2,
+      "costUsd": 0.00336636,
+      "failure": null
+    }
+  ]
+}

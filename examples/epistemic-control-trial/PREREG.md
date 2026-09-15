@@ -171,3 +171,39 @@ incomplete.
 ## Deviations
 
 (appended below as they occur)
+
+**Deviation 1 (after the first 24 runs, before any gated run).** Arms A and B supplied
+the observation as a user message before the investigation began. In eleven of those
+twelve runs the model answered in one request, opened no file, and every citation it
+produced named a file it had not read. That is the failure runs 11 and 13 already
+established for durable state — handed an answer, the planner returns the answer — and
+the shipped planner already guards against it by withholding durable state until a file
+has actually been read. Supplying the observation ungated reproduced a known artifact
+and swamped the variable under test in both arms equally.
+
+Two arms are therefore added, **Ag** and **Bg**, identical to A and B except that the
+observation is withheld until the run has read a file, using the same gate the shipped
+planner uses for durable state. Where a decision point also supplies durable state, the
+observation is pushed first and the durable state immediately after, in the same turn.
+Neither prompt is changed. The original A and B runs are kept and reported; the primary
+comparison is restated as **Ag vs Bg**, with A vs B reported as the ungated result and
+A0 vs B0 as the no-observation result. The decision rule is unchanged: Bg must exceed
+Ag by at least 4 primary points, win at four or more decision points, lose at no more
+than one, and beat the observation's own contribution `(Ag − A0)`.
+
+This deviation was made because the original arms failed as a control, not because the
+result was disliked: the ungated arms produced the *lower* scores for the treatment the
+hypothesis predicts should win, so correcting it can only help the hypothesis.
+
+**Deviation 2 (during the gated arms).** Five runs of thirty-six, spread across three
+arms (B0 at DP1 and DP3, Ag at DP1, DP2 and DP3), ended at the second request with an
+assistant message carrying neither tool calls nor content. At the second request the
+message sequence in those arms is byte-identical to the A0 and B0 runs that investigated
+normally — same system prompt, same objective, same single `list_files` result — so the
+empty response is provider variance, not a property of any arm. The shipped planner
+fails the same way on such a response.
+
+These are apparatus failures rather than answers, so each affected cell is run once more
+as replicate 2, for every arm equally, and the replicate is scored in place of the null
+response. Both files are kept and both are reported. No cell whose run produced an actual
+answer is re-run for any reason.

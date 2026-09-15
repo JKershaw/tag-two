@@ -1,0 +1,45 @@
+DP1  A     parsed=yes  obj=yes  req=1  read=0  tools=none  items=5  cites=10  invented=10  prose/code=4/6  
+DP1  A0    parsed=yes  obj=yes  req=3  read=5  tools=list_files+read_file  items=5  cites=5  invented=0  prose/code=2/3  
+DP1  Ag-r2  parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP1  Ag-r3  parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP1  Ag    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP1  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=2  invented=2  prose/code=1/1  
+DP1  B0-r2  parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=1  invented=0  prose/code=1/0  
+DP1  B0    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP1  Bg    parsed=yes  obj=yes  req=2  read=0  tools=list_files  items=1  cites=1  invented=1  prose/code=0/1  
+DP2  A     parsed=yes  obj=yes  req=1  read=0  tools=none  items=5  cites=10  invented=10  prose/code=6/4  
+DP2  A0    parsed=yes  obj=yes  req=3  read=5  tools=list_files+read_file  items=4  cites=6  invented=0  prose/code=3/3  
+DP2  Ag-r2  parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=5  cites=10  invented=4  prose/code=6/4  
+DP2  Ag    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP2  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=2  invented=2  prose/code=1/1  
+DP2  B0    parsed=yes  obj=yes  req=3  read=6  tools=list_files+read_file  items=1  cites=2  invented=0  prose/code=2/0  
+DP2  Bg-r2  parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=2  invented=0  prose/code=2/0  
+DP2  Bg    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP3  A     parsed=yes  obj=yes  req=1  read=0  tools=none  items=4  cites=8  invented=8  prose/code=4/4  
+DP3  A0    parsed=yes  obj=yes  req=3  read=5  tools=list_files+read_file+history  items=4  cites=8  invented=0  prose/code=5/3  
+DP3  Ag-r2  parsed=yes  obj=yes  req=3  read=6  tools=list_files+read_file  items=4  cites=8  invented=0  prose/code=4/4  
+DP3  Ag    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP3  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=2  invented=2  prose/code=1/1  
+DP3  B0-r2  parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=2  invented=0  prose/code=2/0  
+DP3  B0    parsed=no  obj=n/a  req=2  read=0  tools=list_files  items=0  cites=0  invented=0  prose/code=0/0  No answer within the request limit.
+DP3  Bg    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=2  invented=0  prose/code=2/0  
+DP4  A     parsed=yes  obj=yes  req=1  read=0  tools=none  items=4  cites=8  invented=8  prose/code=4/4  
+DP4  A0    parsed=yes  obj=yes  req=3  read=6  tools=list_files+read_file  items=3  cites=6  invented=3  prose/code=4/2  
+DP4  Ag    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=4  cites=8  invented=4  prose/code=4/4  
+DP4  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=1  invented=1  prose/code=0/1  
+DP4  B0    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=2  invented=2  prose/code=1/1  
+DP4  Bg    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=2  invented=1  prose/code=2/0  
+DP5  A     parsed=yes  obj=yes  req=3  read=4  tools=list_files+read_file  items=4  cites=8  invented=5  prose/code=4/4  
+DP5  A0    parsed=yes  obj=yes  req=4  read=7  tools=list_files+read_file  items=4  cites=8  invented=3  prose/code=4/4  
+DP5  Ag    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=4  cites=8  invented=6  prose/code=4/4  
+DP5  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=2  invented=2  prose/code=0/2  
+DP5  B0    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=1  invented=0  prose/code=1/0  
+DP5  Bg    parsed=yes  obj=yes  req=3  read=5  tools=list_files+read_file+history  items=1  cites=2  invented=1  prose/code=1/1  
+DP6  A     parsed=yes  obj=yes  req=1  read=0  tools=none  items=3  cites=8  invented=8  prose/code=2/6  
+DP6  A0    parsed=yes  obj=yes  req=3  read=5  tools=list_files+read_file  items=5  cites=10  invented=1  prose/code=6/4  
+DP6  Ag    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=4  cites=9  invented=5  prose/code=7/2  
+DP6  B     parsed=yes  obj=yes  req=1  read=0  tools=none  items=1  cites=3  invented=3  prose/code=1/2  
+DP6  B0    parsed=yes  obj=yes  req=3  read=1  tools=list_files+read_file  items=1  cites=1  invented=0  prose/code=1/0  
+DP6  Bg    parsed=yes  obj=yes  req=2  read=0  tools=list_files  items=1  cites=1  invented=1  prose/code=0/1  
+
+Runs: 43  Reported spend: $0.12764

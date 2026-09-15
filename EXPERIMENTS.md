@@ -863,3 +863,184 @@ objective only aimed the mirroring more precisely.
 
 The thing the trial found instead is about the objective's relationship to the code, not
 its width — and it was found at a commit from before any of this machinery existed.
+
+---
+
+## The epistemic/control trial (runs 42–84)
+
+The forty-one runs above improved research completeness, citation honesty, durable
+state and observability, and did not improve `objective → useful task decomposition`.
+A research note assembled from prior work in planning, agent control and scientific
+reasoning proposed an explanation: that useful work may need to be derived from an
+evolving epistemic state and an explicit next-operation decision, rather than generated
+directly from a broad objective — and that choosing what kind of reasoning happens next
+may be a separate problem from the domain objective. It also noted that the external
+steward driving this project has in fact worked that way.
+
+This trial tests that, against tag-two's own history, before anything is built. The
+design was written down before any run and is archived unedited at
+[`examples/epistemic-control-trial/PREREG.md`](examples/epistemic-control-trial/PREREG.md),
+with the per-cell judgements and their supporting quotations in `SCORES.md`, the
+mechanical measures in `mechanical.txt`, and every run — including the ones that
+produced nothing — beside them under its decision point.
+
+Forty-three runs, $0.12764 in total. No source file was changed during the trial.
+
+### Design
+
+Six historical decision points, each a moment where a run had just produced evidence
+and the steward's later response is known. At each one the world state is the
+repository at the commit that run actually executed against — never the commit that
+records the assessment of it — with that commit's own repository tools and its own
+durable-state supply mechanism. The observation is `tag observe`'s mechanical report of
+what the run did plus the answer it returned: what was in `.tag/` at that moment, with
+no assessment and no later text.
+
+| DP | State | The run | The steward's next step |
+| --- | --- | --- | --- |
+| DP1 | `1bbcc87` | run 2 | remove the read window: the run had been told, in terms naming the exact next call, that its view was incomplete, and did not paginate |
+| DP2 | `216b7d1` | run 5 | instruct the planner to check the code first: it proposed complete research while citing its finished implementation |
+| DP3 | `e2e94e5` | run 8 | build `tag record`: a node from tag-two's own graph was worked, refuted, and the result had nowhere to go |
+| DP4 | `082883e` | run 13 | supply outcomes, not node bodies: handed the whole graph, the planner read one file and restated it |
+| DP5 | `5506972` | run 18 | hide the durable graph from the file tools: the same state was arriving twice |
+| DP6 | `b811801` | run 20 | run a control at the seed commit, where no analysis of any run is in the input |
+
+Two primitives, crossed with whether the observation is supplied. **A** is tag-two's
+shipped planner instructions, extracted from `src/plan.js` at run time so the arm cannot
+drift. **B** keeps every earned constraint in A and replaces only "propose 3–6 tasks"
+and the graph format with: state what is established, uncertain, contradicted and worth
+investigating, then choose exactly one bounded next operation — investigate, test, act,
+validate or stop — and say what uncertainty its result reduces. Model, temperature,
+budgets, tools, supply and objective are identical across arms. The objective is the
+standing one in every cell.
+
+### Result 1: supplying the observation destroys the investigation, in both arms
+
+Eleven of the twelve runs handed the observation up front answered in one request,
+opened no file, and produced citations of which every single one named a file they had
+not read. This is runs 11 and 13 again — handed an answer, the planner returns the
+answer — with a mechanical report of a run in place of a durable graph. The shipped
+planner already withholds durable state until a file has been read; the trial's first
+two arms did not, which was a control failure on my part and is recorded as Deviation 1
+in the pre-registration. Two further arms, **Ag** and **Bg**, gate the observation
+behind a first read exactly as the planner gates durable state.
+
+| Arm | Observation | Runs that read nothing |
+| --- | --- | --- |
+| A0, B0 | none | 2 of 14 |
+| A, B | supplied up front | 11 of 12 |
+| Ag, Bg | gated behind a first read | 8 of 17 |
+
+Gating recovers the investigation only partly, and the arms that were given no
+observation at all read by far the most: 33 files across six A0 runs, against 10 across
+ten Ag runs. **On this evidence, handing a model a report of what just happened costs
+more research than it buys**, whenever it arrives.
+
+### Result 2: the primary measure refutes the hypothesis as stated
+
+Each output was scored on whether the operation it chose would have produced what the
+steward's actual next step produced. Arm A was scored generously, taking the best of its
+three to five nodes against arm B's single operation.
+
+| Arm | Observation | Primary total (max 12) | Target discrepancy named |
+| --- | --- | --- | --- |
+| A0 | none | 2 | 0 of 6 |
+| A | up front | 1 | 0 of 6 |
+| Ag | gated | 0 | 0 of 6 |
+| B0 | none | 2 | 1 of 6 |
+| B | up front | 0 | 0 of 6 |
+| Bg | gated | 2 | 1 of 6 |
+
+The pre-registered rule required the epistemic arm to exceed the direct arm by at least
+four points and to win at four or more of the six decision points. It exceeds it by two
+and wins at one. **Milestone A is not reached and the hypothesis as operationalised is
+refuted.** Five of the six decision points produced nothing in any arm.
+
+### Result 3: the one positive signal is mirroring, and the check that found it matters
+
+At DP2 both epistemic runs named the contradiction exactly — *"README.md describes
+research completeness as an open problem while code implements it"* — and all three
+direct runs committed it, proposing complete research while citing
+`src/repository.js:78-95`, its own implementation, as the evidence. That asymmetry is
+3–0 against and 2–0 for, and it looked like the result the trial was built to find.
+
+`README.md` at `216b7d1` says it first:
+
+> *"Ensure complete research before decomposition"* proposes work that was already
+> finished in the code the agent had just read in full
+
+and thirty lines later names the steward's actual next change as a suggestion:
+
+> whether it needs a different operation — for example asking the agent to reconcile
+> written claims against code before proposing work
+
+The epistemic arm read that paragraph and paraphrased it into a `contradicted` field.
+The advantage is a better-shaped mirror, not better reasoning. What survives is the
+narrower and stranger half: **the direct arm read the same paragraph and proposed the
+work it warns against anyway.** Being asked for a list of tasks appears to select the
+task list out of the prose and leave the assessment beside it unread; being asked for a
+contradiction selects the assessment. Neither is analysis.
+
+### Result 4: the answer was one unopened file away
+
+DP3 was declared in advance as a contaminated positive control, because
+`notes/steward-log.md` at that commit already names "nothing reads a graph back" as the
+largest gap between the project's purpose and its implementation. **No run in any arm
+opened that file.** Six runs listed it and none read it. Every arm instead proposed
+expanding tool usage — the work the supplied observation reports as having just been
+refuted.
+
+### What this trial establishes
+
+1. **The epistemic/control hypothesis, in the smallest form that could be tested, is
+   refuted.** An explicit epistemic state plus a single bounded next-operation decision
+   did not out-decide direct decomposition against six real historical moments, on the
+   primitive's own pre-registered measure.
+2. **Both primitives fail in the same place, and it is not the output shape.** Neither
+   noticed five of six discrepancies; both proposed already-completed work; both
+   preferred the salient paragraph to the code. Changing what the model is asked to
+   produce did not change what it notices.
+3. **The observation channel is a liability, not an asset.** Supplying a run's own
+   result, in the most mechanical and least interpreted form available, suppressed
+   investigation in both arms. This is the third distinct kind of durable state — node
+   bodies, recorded outcomes, and now a run report — and the second to suppress research
+   when supplied up front.
+4. **Objective substitution was never once observed in this trial.** Every one of the 38
+   parseable answers, across both primitives and all six states, returned the standing
+   objective unchanged. The substitutions seen in the bounded-objective trial were
+   caused by the objective being unusual in that repository, not by the planner's
+   general habits.
+
+### Contradictory evidence and confounders, kept
+
+- **Deviation 1 was my error, not the model's.** The first twelve observation runs are
+  archived and reported, and they are the reason the gated arms exist.
+- **Five runs of forty-three ended with an empty provider response** — no tool calls, no
+  content, `finish_reason: null` — at the second request, on message sequences identical
+  to runs that proceeded normally. Four recovered on a replicate. DP1/Ag failed three
+  times running and is reported as a null cell rather than as a zero.
+- **A0 scored as well as any epistemic arm.** The shipped primitive, given no
+  observation at all, produced the trial's other two points. The treatment never beat
+  the control the project already ships.
+- **Scoring was not blind**, and could not be: a graph and an epistemic state are
+  distinguishable at a glance. Every judged call is quoted in `SCORES.md` so it can be
+  overturned.
+- **Six decision points is a small sample**, and five of the six scored zero in every
+  arm, so the trial discriminates poorly between two primitives that are both failing.
+  A larger sample would measure that failure more precisely; it would not change the
+  decision, which requires an advantage this data does not contain.
+
+### The strongest remaining explanation
+
+Across sixty-three runs and three trials, every mechanism aimed at the *input* — how much
+is read, how completely, how it is cited, what durable state is supplied and in what
+form — has improved that mechanism and left decomposition alone. Every mechanism aimed at
+the *output shape* — a task graph, now an epistemic state and a control decision — has
+also left it alone. The one variable that has ever moved the measure is the objective's
+relationship to the code, at a repository state carrying no analysis of itself.
+
+What has not been tested is whether this model, in a single bounded call, can notice a
+discrepancy it has not been told about at all. Every "noticing" this project has
+recorded — including the best one in this trial — has turned out to be a paraphrase of a
+sentence in the input. That is the question the next experiment should isolate, and it
+is a question about the model, not about tag-two's architecture.

@@ -76,9 +76,18 @@ node /absolute/path/to/tag-two/bin/tag.js observe .tag/graph.json
 
 `observe` reads a saved graph or a `failed-run.json` and reports the model, request
 count, cost, which tools were called and which were never called, which files were read
-whole and which came back truncated, and — for a graph — every evidence citation naming
-a file that run never opened. It was written after fourteen runs had been assessed by
-hand with throwaway scripts asking the same questions.
+whole and which came back truncated, whether the objective the model returned is the one
+it was asked, and — for a graph — every evidence citation naming a file that run never
+opened. It was written after fourteen runs had been assessed by hand with throwaway
+scripts asking the same questions.
+
+The objective comparison is instrumentation, not correction. `validateGraph` still treats
+the asked objective as authoritative, but it now keeps an echo that is not byte-identical
+as `objectiveReturned` instead of overwriting it, and `observe` reads a rejected run's
+objective out of its preserved raw answer. Seven runs have rewritten a supplied objective
+and two replaced it with this repository's own; every one was found by a human comparing
+two strings by hand. The comparison is a plain string comparison. Nothing judges whether
+two objectives mean the same thing, and no model is involved in it.
 
 The next run is then given those outcomes. Not the graph — only the outcomes, and only
 after it has read a file. Handed whole nodes up front, two real runs restated them
@@ -785,5 +794,15 @@ the planner's input, a bounded objective naming a failure that can be found in t
 did decompose materially better than the broad one, replicated across four runs; a
 bounded objective naming a quantity with nowhere to look did not. The active ingredient
 is the objective's relationship to the code, not its width, and the accumulated prose in
-this repository outweighs both. `EXPERIMENTS.md` has the runs.
+this repository outweighs both.
+
+Forty-three further runs then tested the strongest remaining explanation: that useful work
+has to be derived from an explicit epistemic state and an explicit choice of next
+operation rather than generated straight from a broad objective. Replayed against six
+moments in this repository's own history, with the later answer withheld, that primitive
+did not out-decide the shipped planner — it scored two points to the planner's two, named
+one target discrepancy of six, and its one success turned out to be a paraphrase of a
+paragraph in its own input. Supplying a run its own result suppressed investigation in
+both primitives. The trial stopped there rather than building a more elaborate version.
+`EXPERIMENTS.md` has the runs.
 

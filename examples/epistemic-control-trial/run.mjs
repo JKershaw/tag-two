@@ -85,6 +85,13 @@ const ARMS = {
   A: { primitive: 'direct', observation: true },
   B0: { primitive: 'epistemic', observation: false },
   B: { primitive: 'epistemic', observation: true },
+  // Deviation 1. Arms A and B supplied the observation before any investigation, and in
+  // eleven of twelve runs the model answered from it without opening a file — the same
+  // failure runs 11 and 13 found for the durable graph, which the shipped planner already
+  // gates behind a first read. These arms gate the observation the same way. Nothing about
+  // either prompt changes; the gate applies identically to both.
+  Ag: { primitive: 'direct', observation: true, gate: true },
+  Bg: { primitive: 'epistemic', observation: true, gate: true },
 };
 
 async function worktree(commit) {
@@ -154,20 +161,27 @@ async function main() {
 
   const system = arm.primitive === 'direct' ? await shippedInstructions() : EPISTEMIC;
   const messages = [{ role: 'system', content: system }, { role: 'user', content: OBJECTIVE }];
-  if (arm.observation) messages.push({ role: 'user', content: await observationMessage(point.observation) });
+  const observation = arm.observation ? await observationMessage(point.observation) : null;
+  if (observation && !arm.gate) messages.push({ role: 'user', content: observation });
   const prior = await durableSupply(root, point.supply);
 
   const attempt = {
     decisionPoint: dp, arm: armName, replicate: Number(replicate), commit: point.commit,
-    objective: OBJECTIVE, observationSupplied: arm.observation, observationFrom: arm.observation ? point.observation : null,
+    objective: OBJECTIVE, observationSupplied: arm.observation, observationGated: Boolean(arm.gate),
+    observationFrom: arm.observation ? point.observation : null,
     durableSupply: point.supply, exclude: point.exclude, model: MODEL,
     createdAt: new Date().toISOString(), requests: 0, costUsd: 0, investigation: [], answer: null, failure: null,
   };
   let supplied = !prior;
+  let gaveObservation = !(observation && arm.gate);
   const researched = () => attempt.investigation.some(i => i.tool === 'read_file' && /^\d+: /.test(i.result));
   try {
     for (let turn = 1; turn <= MAX_REQUESTS; turn++) {
       attempt.requests = turn;
+      if (!gaveObservation && researched()) {
+        gaveObservation = true;
+        messages.push({ role: 'user', content: observation });
+      }
       if (prior && !supplied && researched()) {
         supplied = true;
         messages.push({ role: 'user', content: prior });
@@ -206,6 +220,10 @@ async function main() {
         continue;
       }
       attempt.answer = message.content;
+      // Five runs across three arms ended with an assistant message carrying no tool calls
+      // and no content, on message sequences byte-identical to runs that investigated
+      // normally. The raw message is kept so an empty answer can be told from a real one.
+      attempt.finalMessage = { role: message.role, content: message.content, finish_reason: choice.finish_reason };
       break;
     }
     if (attempt.answer === null) attempt.failure = 'No answer within the request limit.';

@@ -1,0 +1,25 @@
+{
+  "decisionPoint": "DP3",
+  "arm": "Ag",
+  "replicate": 1,
+  "commit": "e2e94e5",
+  "objective": "Make tag-two better at achieving its purpose.",
+  "observationSupplied": true,
+  "observationGated": true,
+  "observationFrom": "examples/eighth-dogfood/failed-run.json",
+  "durableSupply": "none",
+  "exclude": [],
+  "model": "deepseek/deepseek-chat-v3-0324",
+  "createdAt": "2026-09-15T20:04:40.489Z",
+  "requests": 2,
+  "costUsd": 0.0006684,
+  "investigation": [
+    {
+      "tool": "list_files",
+      "arguments": {},
+      "result": "{\"files\":[\".gitignore\",\"LICENSE\",\"README.md\",\"bin/tag.js\",\"examples/fifth-dogfood/graph.html\",\"examples/fifth-dogfood/graph.json\",\"examples/first-dogfood/graph.html\",\"examples/first-dogfood/graph.json\",\"examples/fourth-dogfood/graph.html\",\"examples/fourth-dogfood/graph.json\",\"examples/second-dogfood/graph.html\",\"examples/second-dogfood/graph.json\",\"examples/seventh-dogfood/graph.html\",\"examples/seventh-dogfood/graph.json\",\"examples/sixth-dogfood/failed-run.json\",\"examples/third-dogfood/failed-run.json\",\"notes/steward-log.md\",\"package.json\",\"src/graph.js\",\"src/plan.js\",\"src/repository.js\",\"test/tag.test.js\"],\"total\":22,\"nextOffset\":null}"
+    }
+  ],
+  "answer": null,
+  "failure": "No answer within the request limit."
+}

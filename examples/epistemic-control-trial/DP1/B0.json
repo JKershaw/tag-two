@@ -1,0 +1,26 @@
+{
+  "decisionPoint": "DP1",
+  "arm": "B0",
+  "replicate": 1,
+  "commit": "1bbcc87",
+  "objective": "Make tag-two better at achieving its purpose.",
+  "observationSupplied": false,
+  "observationFrom": null,
+  "durableSupply": "none",
+  "exclude": [],
+  "model": "deepseek/deepseek-chat-v3-0324",
+  "createdAt": "2026-09-15T20:00:53.358Z",
+  "requests": 2,
+  "costUsd": 0.0007689600000000001,
+  "investigation": [
+    {
+      "tool": "list_files",
+      "arguments": {
+        "offset": 0
+      },
+      "result": "{\"files\":[\".gitignore\",\"LICENSE\",\"README.md\",\"bin/tag.js\",\"examples/first-dogfood/graph.html\",\"examples/first-dogfood/graph.json\",\"package.json\",\"src/graph.js\",\"src/plan.js\",\"src/repository.js\",\"test/tag.test.js\"],\"total\":11,\"nextOffset\":null}"
+    }
+  ],
+  "answer": null,
+  "failure": "No answer within the request limit."
+}

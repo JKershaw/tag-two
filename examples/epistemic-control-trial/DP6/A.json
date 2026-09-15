@@ -1,0 +1,21 @@
+{
+  "decisionPoint": "DP6",
+  "arm": "A",
+  "replicate": 1,
+  "commit": "b811801",
+  "objective": "Make tag-two better at achieving its purpose.",
+  "observationSupplied": true,
+  "observationFrom": "examples/twentieth-dogfood/graph.json",
+  "durableSupply": "outcomes",
+  "exclude": [
+    "graph/graph.json",
+    "graph/graph.html"
+  ],
+  "model": "deepseek/deepseek-chat-v3-0324",
+  "createdAt": "2026-09-15T20:00:20.235Z",
+  "requests": 1,
+  "costUsd": 0.00075852,
+  "investigation": [],
+  "answer": "```json\n{\n  \"objective\": \"Make tag-two better at achieving its purpose.\",\n  \"summary\": \"The repository describes an experiment in persistent, agent-assisted problem solving. The system currently investigates repositories and produces task graphs, but improvements are needed to enhance its effectiveness. Prior attempts include expanding tool usage beyond file reading and enhancing evidence collection in task proposals. Important uncertainties remain about how to reliably improve tool usage and evidence collection.\",\n  \"nodes\": [\n    {\n      \"id\": \"investigate-tool-usage\",\n      \"title\": \"Investigate reliable tool usage\",\n      \"reason\": \"Understanding why tool usage (like history and search) is inconsistent will help improve the system's ability to gather relevant evidence.\",\n      \"evidence\": [\n        \"README.md:20-22 — The planner uses tools like list_files, read_file, search, and history.\",\n        \"test/tag.test.js:505-625 — Tests for tool usage and evidence collection.\",\n        \"src/plan.js:20-223 — Implementation of tool usage in the planner.\"\n      ],\n      \"dependsOn\": []\n    },\n    {\n      \"id\": \"enhance-evidence-validation\",\n      \"title\": \"Enhance evidence validation\",\n      \"reason\": \"Ensuring evidence citations are accurate and based on actual file reads will improve the reliability of task proposals.\",\n      \"evidence\": [\n        \"src/graph.js:1-96 — Validation and rendering of graphs.\",\n        \"test/tag.test.js:505-625 — Tests for evidence validation.\",\n        \"src/plan.js:182-199 — Implementation of evidence citation checks.\"\n      ],\n      \"dependsOn\": [\n        \"investigate-tool-usage\"\n      ]\n    },\n    {\n      \"id\": \"improve-human-interface\",\n      \"title\": \"Improve human interface for task selection\",\n      \"reason\": \"Making it easier for humans to understand and select tasks from the graph will enhance usability.\",\n      \"evidence\": [\n        \"src/graph.js:55-95 — HTML rendering of graphs.\",\n        \"README.md:33-36 — Description of the graph interface.\"\n      ],\n      \"dependsOn\": [\n        \"enhance-evidence-validation\"\n      ]\n    }\n  ]\n}\n```",
+  "failure": null
+}
