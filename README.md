@@ -96,6 +96,76 @@ gap in research and decomposition, not automatically execute this graph or add
 scheduling machinery. No tasks were executed and no extra run was made to obtain
 a more appealing answer.
 
+**Second dogfood attempt (2026-09-15, no graph):** after `read_file` was changed
+to report partial reads, one run of the planner reached the model, investigated the
+repository, and returned an answer that failed graph validation. The planner then
+deleted `.tag`, so the only surviving information was the error string
+(`Expected the original objective, a research summary, and 1–8 nodes.`). The
+transcript and the rejected answer were gone, and a real paid run taught us nothing
+about why it failed.
+
+That is the observed need behind the next change: a failed run now writes
+`.tag/failed-run.json` with the objective, failure message, request count, reported
+cost, full investigation transcript and raw model answer, and keeps the directory.
+No repair, retry or fallback was added — only the ability to see what happened.
+
+**Second completed dogfood run (2026-09-15):** the same objective was run once more,
+because the previous attempt produced no graph to assess. DeepSeek V3 0324 made three
+requests at a reported total cost of **$0.004499**, reading `package.json` and all
+four implementation and test files, plus the first 200 lines of the README. The
+unedited outputs are preserved in
+[`examples/second-dogfood/graph.json`](examples/second-dogfood/graph.json) and
+[`examples/second-dogfood/graph.html`](examples/second-dogfood/graph.html).
+
+The graph proposed five tasks:
+
+1. Improve research depth and completeness.
+2. Enforce stricter validation of evidence citations (depends on 1).
+3. Clarify the research summary (depends on 1).
+4. Expand test coverage for runtime behaviour (depends on 2).
+5. Document lessons from the first dogfood run (depends on 1).
+
+**Assessment: the change failed its purpose, and the better-looking graph is
+misleading.** The tool change worked exactly as designed — the model was told
+`PARTIAL READ: lines 1-200 of 739. The remaining 539 lines of README.md have NOT
+been shown. Call read_file with path "README.md" and startLine 201 to read them.`
+and an equivalent notice for `test/tag.test.js`. It paginated neither, with seven
+of ten requests unused. **Telling the model its view is incomplete, in explicit
+terms that name the exact next call, did not make it finish reading.** The
+research gap identified after the first run is therefore still open, and the
+obvious cheap fix for it is now ruled out by evidence rather than by opinion.
+
+The proposed tasks read as improvements rather than as one review task per source
+file, and two of them cite specific line ranges instead of whole files. But this is
+not better research. The five tasks correspond almost one-to-one to sentences in the
+human assessment of the first run written at `README.md:83-97`, which had moved into
+the first 200 lines the agent did read: premature reading, broad evidence citations,
+an unclear summary, unverified runtime behaviour, undocumented lessons. The agent is
+still mirroring the most salient text in its context. In the first run that text was
+a file listing; in the second it was a human's critique. The apparent improvement
+came from a human writing the analysis into the input, not from the agent producing
+it.
+
+The sharpest single observation: the agent proposed *"Improve research depth and
+completeness — ensures the agent reads the entire README and other key files"* in the
+same request in which it declined to read the rest of the README. It can name the
+weakness it is exhibiting without that changing its behaviour.
+
+What this rules out, and what remains open:
+
+- Ruled out: passive truncation notes, and explicit directive ones, as a way to get
+  complete research. Both were tried against a real run and both failed.
+- Still open: whether the system should guarantee complete reading itself rather than
+  asking the model to, and whether complete research actually improves decomposition
+  or merely changes which text gets mirrored. These are separate questions and the
+  second cannot be answered until the first is.
+- Not evidenced: any need for scheduling, execution, retries, model routing or
+  multi-generation machinery. Nothing in either run pointed at those.
+
+Both runs used the objective exactly once each. No run was repeated to obtain a more
+appealing graph, no proposed task was executed, and the archived artifacts are
+unedited.
+
 ---
 
 Why this exists
