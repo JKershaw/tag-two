@@ -1,0 +1,1 @@
+Investigate tool usage patterns. Understanding how and when tools like `history` and `search` are used can help improve the planner's effectiveness. This builds on prior outcomes showing mixed results with tool directives.

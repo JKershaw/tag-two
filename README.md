@@ -768,11 +768,22 @@ Do not build the final system.
 
 Build the thing that lets us run the next experiment.
 
-Where that stands after twenty-one runs, in short: a real improvement to tag-two has
+Where that stands after forty-one runs, in short: a real improvement to tag-two has
 travelled through tag-two's own durable graph, and a complete cycle — ready node,
 work, measurement, recorded outcome, adopted graph — has run through it. The graph is
 now honest about its evidence and knows what has already been tried. It is not yet
 useful at deciding what should be done next: run against this repository as it stood
 twenty runs ago, with none of the accumulated analysis in its input, it produces the
-same shape of decomposition it produced then. `EXPERIMENTS.md` has the runs.
+same shape of decomposition it produced then.
+
+Twenty further runs tested whether a narrower objective fixes that, and it does not, at
+least not here. Objectives taken from the durable graph's own ready nodes produced no
+graph at all in seven attempts — the planner rewrites a node title into an objective and
+the echo check rejects it, and twice it replaced the given objective with this
+repository's standing one. Against the seed commit, where no analysis of any run is in
+the planner's input, a bounded objective naming a failure that can be found in the code
+did decompose materially better than the broad one, replicated across four runs; a
+bounded objective naming a quantity with nowhere to look did not. The active ingredient
+is the objective's relationship to the code, not its width, and the accumulated prose in
+this repository outweighs both. `EXPERIMENTS.md` has the runs.
 

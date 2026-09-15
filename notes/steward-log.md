@@ -131,3 +131,41 @@ Things I deliberately did not build, and why:
 An honest note on cost of evidence: four of twenty-one runs produced no graph because
 they were rejected, and every one of those rejections taught more than the graph would
 have. Preserving failed runs remains the highest-value mechanism in the repository.
+
+## The bounded-objective trial, runs 22–41 (2026-09-15)
+
+I wrote the design down before running anything, because the lead I was testing was one
+I had produced myself and wanted to be true. The pre-registration is archived with the
+runs. Fixed n per cell, no cell topped up, no run re-run to replace a bad one, every
+failure kept. Three of the twenty runs produced nothing for reasons that had nothing to
+do with any arm; under a "run it again until it works" habit I would have replaced them
+and never noticed how common bare failure is.
+
+What I still did, every time, exactly as before: chose the objectives, chose the states,
+wrote the rubric, resolved every citation against the real file, and made the
+useful/not-useful call. The scoring is mechanical up to the point where it matters and
+then it is me.
+
+Two things I got wrong going in.
+
+**I expected the failure to be about quality and it was about protocol.** Seven runs
+given a node title as an objective produced no graph at all. A node title is not an
+objective; the model completes it into one and the echo check kills it. I had written
+"bounded objectives drawn from the graph" in the previous section as though the drawing
+were the easy part.
+
+**I expected "bounded" to be the variable and it is not.** Arm G was bounded, at the same
+commit, in the same trial, and behaved exactly like the broad arm. The difference between
+the objective that worked and the one that did not is whether the failure it names can be
+found by reading the code. I would not have run G if I had only been trying to confirm
+the lead, and it is the run that made the result worth having.
+
+The sharpest thing in the trial is C1 and C2 replacing the objective I gave them with
+this repository's own. I have been recording mirroring of node bodies and evidence
+strings for twenty runs. It reaches the objective too. Whatever this repository's prose
+says loudly enough, the planner will say back, including what it is for.
+
+I did not change any source file during the trial, and I am not changing one now. The
+consequence of this result — that the useful objective is one with a locus in code, and
+that the graph's nodes do not supply one — is an architectural claim resting on four
+graphs at one commit. It needs its own experiment before it needs an implementation.

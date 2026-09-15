@@ -1,0 +1,21 @@
+{
+  "objective": "Make tag-two better at achieving its purpose.",
+  "failure": "The model proposed a graph without reading repository evidence.",
+  "run": {
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "createdAt": "2026-09-15T18:20:00.603Z",
+    "requests": 2,
+    "costUsd": 0.00071922,
+    "investigation": [
+      {
+        "tool": "list_files",
+        "arguments": {
+          "offset": 0
+        },
+        "result": "{\"files\":[\".gitignore\",\"LICENSE\",\"README.md\",\"bin/tag.js\",\"package.json\",\"src/graph.js\",\"src/plan.js\",\"src/repository.js\",\"test/tag.test.js\"],\"total\":9,\"nextOffset\":null}"
+      }
+    ],
+    "priorGraph": null,
+    "answer": null
+  }
+}
