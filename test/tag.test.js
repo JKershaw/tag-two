@@ -9,6 +9,7 @@ import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
 import { adopt } from '../src/adopt.js';
+import { input } from '../src/input.js';
 import { observe, describe } from '../src/observe.js';
 
 const objective = 'Improve the project';
@@ -404,6 +405,38 @@ test('the planner is handed the recorded outcomes, and nothing else from the dur
   assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
 });
 
+test('the planner is handed durable input as a claim, not as work already performed', async t => {
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  const durable = planned();
+  durable.inputs = [{ at: '2026-09-18T00:00:00.000Z', from: 'human', kind: 'observation', text: "this keeps proposing work we've already done" }];
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
+
+  const seen = [];
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    const messages = JSON.parse(options.body).messages;
+    if (calls === 2) {
+      assert.equal(messages.length, 2, 'input is withheld until the repository is investigated');
+      return toolAnswer();
+    }
+    seen.push(...messages.slice(2).map(item => item.content).filter(item => typeof item === 'string'));
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  const said = seen.find(item => item.startsWith('Said to this project'));
+  assert.ok(said, 'the input reaches the model');
+  assert.match(said, /- observation from human \(2026-09-18T00:00:00\.000Z\): this keeps proposing work we've already done/);
+  // The failure that produced this: forced through `record`, a human observation was supplied as
+  // "Work already performed ... what each attempt actually did".
+  assert.match(said, /a claim to check against the repository, not an established result/);
+  assert.doesNotMatch(said, /^Work already performed/);
+  assert.equal(seen.filter(item => item.startsWith('Work already performed')).length, 0, 'there are no outcomes here to supply');
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).run.priorGraph,
+    join(directory, 'graph', 'graph.json'));
+});
+
 test('a repository with no durable graph is planned exactly as before, and a corrupt one stops the run', async t => {
   const directory = await fixture(t);
   let prompt;
@@ -466,7 +499,7 @@ test('adopt replaces a durable graph and carries every recorded outcome across',
     { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
   ] };
   const result = await adopt(await graphFile(t, replanned), durablePath);
-  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2 });
+  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2, inputs: 0 });
 
   const after = JSON.parse(await readFile(durablePath, 'utf8'));
   assert.deepEqual(after.nodes.map(node => node.id), ['something-else']);
@@ -479,6 +512,49 @@ test('adopt replaces a durable graph and carries every recorded outcome across',
   const html = await readFile(result.htmlPath, 'utf8');
   assert.match(html, /no longer contains/, 'outcomes outlive the nodes that proposed them');
   assert.match(html, /Worked and refuted\./);
+});
+
+test('input keeps what arrived from outside the graph without relabelling it as work', async t => {
+  const path = await graphFile(t);
+  const result = await input(path, 'human', 'observation', "  this keeps proposing work we've already done  ",
+    { now: () => '2026-09-18T00:00:00.000Z' });
+  assert.deepEqual(result, { htmlPath: path.replace(/json$/, 'html'), inputs: 1 });
+
+  const after = JSON.parse(await readFile(path, 'utf8'));
+  assert.deepEqual(after.inputs, [{ at: '2026-09-18T00:00:00.000Z', from: 'human', kind: 'observation',
+    text: "this keeps proposing work we've already done" }]);
+  // The failure this exists for: pushed through `record`, the same sentence needed a node id it is
+  // not about, marked that node worked, and reached the planner as work already performed.
+  assert.equal(after.outcomes, undefined);
+  const html = await readFile(result.htmlPath, 'utf8');
+  assert.match(html, /2 tasks · 1 ready for human selection · 1 dependency-blocked · 0 worked/);
+  assert.match(html, /observation<\/strong> from human/);
+  assert.match(html, /already done/);
+  assert.doesNotMatch(html, /Worked — see recorded outcomes/);
+});
+
+test('input refuses an empty source, kind or text and an invalid graph', async t => {
+  const path = await graphFile(t);
+  const before = await readFile(path, 'utf8');
+  await assert.rejects(input(path, ' ', 'observation', 'text'), /source is required/);
+  await assert.rejects(input(path, 'human', '', 'text'), /kind is required/);
+  await assert.rejects(input(path, 'human', 'observation', '  '), /text is required/);
+  await assert.rejects(input(path.replace(/json$/, 'txt'), 'human', 'observation', 'text'), /graph\.json/);
+  assert.equal(await readFile(path, 'utf8'), before);
+  await assert.rejects(input(await graphFile(t, { ...planned(), inputs: [{ at: 'now', kind: 'observation' }] }),
+    'human', 'observation', 'text'), /\{at, from, kind, text\}/);
+});
+
+test('adopt carries input across a replanning', async t => {
+  const durablePath = await graphFile(t);
+  await input(durablePath, 'human', 'constraint', 'Do not build execution yet.', { now: () => '2026-09-18T00:00:00.000Z' });
+  const replanned = { ...planned(), nodes: [
+    { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
+  ] };
+  const result = await adopt(await graphFile(t, replanned), durablePath);
+  assert.equal(result.inputs, 1);
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.inputs.map(item => item.text), ['Do not build execution yet.']);
 });
 
 test('adopt refuses a different objective, a bad path and an invalid graph, and changes nothing', async t => {
@@ -498,7 +574,7 @@ test('adopt into a repository with no durable graph yet just writes one', async 
   const source = await graphFile(t);
   const target = join(source, '..', 'fresh.json');
   const result = await adopt(source, target);
-  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0 });
+  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0, inputs: 0 });
   assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
 });
 

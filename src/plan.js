@@ -69,11 +69,13 @@ async function priorGraph(path) {
   }
   const graph = JSON.parse(text);
   validateGraph(graph, graph?.objective);
-  // Only the outcomes. Handed whole nodes, two runs returned them: same ids, same reasons, same
-  // evidence strings, copied line numbers, and one file read between them. The node bodies are
-  // answer-shaped and get copied; the outcomes are the part that exists nowhere else.
-  return (graph.outcomes ?? []).map(item =>
-    `- ${item.title} (recorded ${item.at}): ${item.outcome}`);
+  // Only the outcomes and the input. Handed whole nodes, two runs returned them: same ids, same
+  // reasons, same evidence strings, copied line numbers, and one file read between them. The node
+  // bodies are answer-shaped and get copied; these two are the part that exists nowhere else.
+  return {
+    outcomes: (graph.outcomes ?? []).map(item => `- ${item.title} (recorded ${item.at}): ${item.outcome}`),
+    inputs: (graph.inputs ?? []).map(item => `- ${item.kind} from ${item.from} (${item.at}): ${item.text}`),
+  };
 }
 
 export async function plan(objective, directory, {
@@ -83,8 +85,13 @@ export async function plan(objective, directory, {
 } = {}) {
   if (typeof objective !== 'string' || !objective.trim()) throw new Error('An objective is required.');
   if (!apiKey) throw new Error('Set OPENROUTER_API_KEY before planning.');
-  const outcomes = await priorGraph(graphPath);
-  const prior = outcomes?.length ? outcomes : null;
+  const durableState = await priorGraph(graphPath);
+  const prior = durableState?.outcomes.length ? durableState.outcomes : null;
+  // Stored input that nothing ever reads changes nothing, which is the failure `record` already
+  // demonstrated for outcomes: run 9 reproposed the node whose outcome refuted it. Input is
+  // supplied on the same channel and under the same gate, and labelled as what it is rather than
+  // as work already performed.
+  const said = durableState?.inputs.length ? durableState.inputs : null;
   const durable = relative(directory, graphPath);
   const investigate = await repositoryTools(directory, {
     exclude: [durable, durable.replace(/\.json$/, '.html')],
@@ -115,7 +122,7 @@ export async function plan(objective, directory, {
       { role: 'system', content: instructions },
       { role: 'user', content: objective },
     ];
-    attempt.priorGraph = prior ? graphPath : null;
+    attempt.priorGraph = prior || said ? graphPath : null;
     let supplied = false;
     const investigation = attempt.investigation;
     const researched = () => investigation.some(item => item.tool === 'read_file' && /^\d+: /.test(item.result));
@@ -125,9 +132,10 @@ export async function plan(objective, directory, {
       // of its four nodes verbatim, read nothing, and cited files it had never opened. The
       // durable state is real input, so it is withheld until the repository has actually been
       // investigated, and never allowed to stand in for investigating it.
-      if (prior && !supplied && researched()) {
+      if ((prior || said) && !supplied && researched()) {
         supplied = true;
-        messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished. These outcomes are not repository evidence: do not cite them, or any path mentioned in them, unless you have read that file yourself in this investigation.` });
+        if (said) messages.push({ role: 'user', content: `Said to this project from outside the graph, kept in the words it arrived in and labelled with the kind its author gave it:\n${said.join('\n')}\nAn objective, priority, constraint or correction from a human is authoritative: respect it, and if repository evidence contradicts it, report the conflict rather than overriding it. An observation, belief or question is a claim to check against the repository, not an established result. None of this is repository evidence: do not cite it, or any path mentioned in it, unless you have read that file yourself in this investigation.` });
+        if (prior) messages.push({ role: 'user', content: `Work already performed on this objective, recorded by a human after observing what each attempt actually did:\n${prior.join('\n')}\nThis list is not a plan and is not exhaustive. Continue investigating if you have not finished. These outcomes are not repository evidence: do not cite them, or any path mentioned in them, unless you have read that file yourself in this investigation.` });
       }
       const body = {
         model: MODEL, messages, tools, max_tokens: MAX_OUTPUT,

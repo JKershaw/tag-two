@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { plan } from '../src/plan.js';
 import { record } from '../src/record.js';
+import { input } from '../src/input.js';
 import { adopt } from '../src/adopt.js';
 import { observe, describe } from '../src/observe.js';
 import { resolve } from 'node:path';
 
-const usage = 'Usage: tag plan "objective" [repository]\n       tag record <graph.json> <node-id> "what happened"\n       tag adopt <new-graph.json> <durable-graph.json>\n       tag observe <graph.json|failed-run.json>';
+const usage = 'Usage: tag plan "objective" [repository]\n       tag record <graph.json> <node-id> "what happened"\n       tag input <graph.json> <from> <kind> "what was said"\n       tag adopt <new-graph.json> <durable-graph.json>\n       tag observe <graph.json|failed-run.json>';
 const [command, ...rest] = process.argv.slice(2);
 if (command === '--help' || command === '-h') {
-  console.log(`${usage}\nplan requires OPENROUTER_API_KEY, writes .tag/graph.json and .tag/graph.html, then stops.\nrecord appends an outcome to one node of an existing graph and re-renders its HTML.\nadopt replaces a durable graph with a newer one for the same objective, carrying every recorded outcome across.\nobserve reports what a run actually did, without calling a model.`);
+  console.log(`${usage}\nplan requires OPENROUTER_API_KEY, writes .tag/graph.json and .tag/graph.html, then stops.\nrecord appends an outcome to one node of an existing graph and re-renders its HTML.\ninput appends something said from outside the graph — a human or agent objective, observation, belief, question, priority or constraint — in the words it arrived in, attached to no node.\nadopt replaces a durable graph with a newer one for the same objective, carrying every recorded outcome across.\nobserve reports what a run actually did, without calling a model.`);
 } else if (command === 'plan') {
   const [objective, repository = process.cwd(), ...extra] = rest;
   if (!objective?.trim() || extra.length) {
@@ -33,6 +34,20 @@ if (command === '--help' || command === '-h') {
       console.log(`Recorded outcome ${outcomes} on ${nodeId}; re-rendered ${htmlPath}`);
     } catch (error) {
       console.error(`Recording stopped: ${error.message}`);
+      process.exitCode = 1;
+    }
+  }
+} else if (command === 'input') {
+  const [graphPath, from, kind, text, ...extra] = rest;
+  if (!graphPath?.trim() || !from?.trim() || !kind?.trim() || !text?.trim() || extra.length) {
+    console.error(usage);
+    process.exitCode = 1;
+  } else {
+    try {
+      const { htmlPath, inputs } = await input(resolve(graphPath), from, kind, text);
+      console.log(`Recorded ${kind} from ${from} (${inputs} input(s) held); re-rendered ${htmlPath}`);
+    } catch (error) {
+      console.error(`Recording input stopped: ${error.message}`);
       process.exitCode = 1;
     }
   }
