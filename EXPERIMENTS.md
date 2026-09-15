@@ -504,3 +504,120 @@ adopted, retiring both `expand-tools` outcomes while preserving them.
 Adopting whole first put the durable graph at 44 KB — past the planner's own
 40,000-byte read limit, mechanising the exact failure the README had just been split to
 fix. The transcript now stays with the archived run and is referenced by path.
+
+**Fifteenth dogfood run (2026-09-15):** the first run under `tag observe`, archived in
+[`examples/fifteenth-dogfood/graph.json`](examples/fifteenth-dogfood/graph.json) at
+**$0.00312324**.
+
+**Assessment: the worst citations yet.** One file read, no other tool called, and seven
+of ten evidence citations naming files the run never opened — one of them
+`examples/fifteenth-dogfood/graph.json`, its own output, which did not exist. Measured
+across every archived graph, invented citations track how much durable state was
+supplied: 0 of 44 across runs 1, 2, 4, 5 and 7 before any was; 4 of 8 in runs 12 and 13
+handed the whole graph; 2 of 8 in run 14 handed two short outcomes; 7 of 10 here, handed
+three outcomes including a long analytical one. **The outcome text names file paths and
+the planner mines it for citations.**
+
+Asking for honest citations had not worked, and repairing them would be repair. But a
+citation is checkable against the transcript, so it is now checked: every evidence item
+must begin with the path of a file the run actually read, the instructions say the
+graph is rejected otherwise, and the rejected answer is preserved. The hypothesis was
+that the guard would also restore research, because a planner required to cite what it
+read has a reason to read.
+
+**Sixteenth run (rejected, $0.00772425):** the hypothesis held immediately. Four files
+read and `history` called, against one file and nothing else the run before. Invented
+citations fell from seven to three — all three naming archived run files that the
+supplied outcome text mentions. The supply message now says outcomes are not repository
+evidence and that paths inside them must not be cited unread.
+
+**Seventeenth run (no graph, $0.00066175):** read more than any run ever had —
+`README.md`, `EXPERIMENTS.md`, `src/graph.js`, `src/plan.js`, `test/tag.test.js`,
+the experiment log for the first time — and died at 116,999 of 120,000 serialized tool
+bytes without sending its answer. **The third time this repository has outgrown its own
+research budget.** Bytes have been the binding constraint in every run and no run has
+ever used more than five of its ten requests, so the budget rose to 160,000 and the
+request limit fell to 8, leaving the worst-case cost bound unchanged. A bigger number is
+still not a structural answer.
+
+**Eighteenth run (rejected, $0.00921056):** three invented citations again, two of them
+copied verbatim from a node in `graph/graph.json` — which it had read as an ordinary
+tracked file. **The durable state was reaching the planner twice**: once as curated
+outcomes through its own channel, and once as raw node bodies to mirror. Self-hosting
+created that, because tag-two's state lives in the repository tag-two investigates. The
+durable graph and its rendering are now hidden from `list_files` and `read_file`.
+
+**Nineteenth dogfood run (2026-09-15):** archived in
+[`examples/nineteenth-dogfood/graph.json`](examples/nineteenth-dogfood/graph.json) at
+**$0.00790675**. **The first graph since durable state was introduced whose every
+citation names a file the run actually read**: 0 invented of 6, four files read. The
+sequence across the cycle is 7 of 10, 3, 3, 0.
+
+**Twentieth dogfood run (2026-09-15):** a deliberate test of whether the system
+reasons or mirrors. The outcome recorded for the previous cycle was written to be purely
+factual and to propose nothing, because the outcome that preceded run 15 had ended with
+*"Not yet tried: rejecting or flagging a graph whose evidence cites unread files"* — and
+run 15 had duly proposed exactly that. Archived in
+[`examples/twentieth-dogfood/graph.json`](examples/twentieth-dogfood/graph.json) at
+**$0.007977**.
+
+**Assessment: given nothing to copy, it proposed work that already existed.** Citations
+stayed clean and five files were read. But `enhance-evidence-validation` proposes
+building the citation check while citing `src/plan.js:182-199`, the implementation of
+the citation check, as its evidence. That is precisely the fifth run's defect — reading
+the code, describing it accurately, and proposing it anyway — returning after fourteen
+runs and an instruction written specifically against it.
+
+---
+
+## The control: the same repository, twenty runs earlier
+
+The seventh run's assessment named the trap plainly: *"the more carefully a human writes
+the assessment here, the better the graph looks, without the agent having done any more
+work."* Everything since has been measured on a repository whose input contains a
+human's analysis of every previous run. So the planner as it now stands was run against
+this repository as it stood at commit `e1e580e` — the exact state the **first** run
+planned against, with no experiment log, no durable graph, no `tag observe`, and no
+human analysis of any run anywhere in its input.
+
+**Control A, broad objective** (the standing one), archived in
+[`examples/control-seed-broad/graph.json`](examples/control-seed-broad/graph.json) at
+**$0.00510025**. All six files read whole, every citation naming a file it read.
+
+| First run, same repository | Control A, twenty runs later |
+| --- | --- |
+| Investigate README.md for purpose | Investigate current planning behavior |
+| Review graph validation and rendering | Improve validation of task graphs |
+| Examine the planning module | Enhance HTML rendering |
+| Test repository tools | Add detailed cost tracking |
+| Analyse the test suite | Increase test coverage |
+
+**Assessment: the decomposition has not improved.** One investigation node and four
+per-module nodes hanging off it, in both. The first run's assessment — *"most tasks
+repeat inspection the planner already performed, without identifying a demonstrated
+weakness or a concrete improvement"* — applies to the control word for word.
+`add-cost-tracking` proposes work the seed already implemented, citing the price caps at
+`src/plan.js:56-65` as its evidence.
+
+What did improve is real and narrower than it looked: the first run read 200 lines of
+one file, and the control read six files whole; the first run's citations were broad
+file ranges, and the control's are all files it opened. **Research completeness and
+citation honesty improved. Decomposition did not.** The grounded, outcome-aware graphs
+produced on tag-two itself were mirroring accumulated context, and the control removes
+the context and the appearance together.
+
+**Control B, bounded objective** — *"Reduce the chance that a planning run produces no
+usable output."* — archived in
+[`examples/control-seed-bounded/graph.json`](examples/control-seed-bounded/graph.json)
+at **$0.004031**.
+
+Three nodes, not five, and none of them a per-module review. `improve-error-handling`
+and `add-fallback-mechanism` both land on `src/plan.js:128`, where a run that reaches an
+investigation limit stops without saving anything — which is exactly the failure that
+really destroyed the seventeenth run's work. The third node proposes the evidence guard
+that the seed already had.
+
+**A bounded objective decomposes materially better than the standing broad one, at no
+cost and with no code change.** Two of three nodes concrete and correctly located,
+against none of five. This is the strongest lead the experiment has, and it required
+neither new machinery nor a different model.

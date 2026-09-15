@@ -84,3 +84,50 @@ An honest correction to my own log: after the eighth run I recorded a refutation
 from a single run, and the ninth run contradicted it. I was doing exactly what I had
 criticised the planner for — generalising from the most recent salient thing. The
 durable graph held both claims; my own note would have held only the first.
+
+## Runs 15–21 and the controls (2026-09-15)
+
+What tag-two took over from me in this stretch:
+- **Observing a run.** `tag observe` replaced the throwaway script I had written by hand
+  after every single run. It is also the only source of the citation measurements that
+  drove the next three changes, so the system is now producing the evidence its own
+  development is decided on.
+- **Selecting the work.** The node I worked in this cycle, `enhance-evidence`, was the
+  durable graph's only ready node. I did not choose it; the dependency structure did.
+- **Carrying state across a replanning.** `tag adopt` did what I had been doing by hand.
+
+What I still did, every time:
+- decided when to run and with what objective;
+- cleared `.tag` and copied artifacts into `examples/` — twenty-one times;
+- wrote every line of code;
+- formed every hypothesis;
+- judged every result and wrote the outcome text.
+
+The two interventions that mattered most were not features:
+1. **Running the control.** Nothing inside tag-two would ever have told me that twenty
+   runs of improvement had not improved decomposition. The system cannot distinguish
+   its own mirroring from its own understanding, and on current evidence it cannot be
+   made to, because the mirror is built from the record of its own development.
+2. **Writing outcomes carefully.** After run 15 I noticed my outcome text had ended with
+   a suggestion, and run 15 had proposed exactly that suggestion. I rewrote the next
+   outcome to be purely factual, and run 20 then proposed work that already existed.
+   That comparison is the sharpest measurement of independent understanding in the whole
+   log, and it was produced by me deciding to phrase a note differently. **The quality of
+   this loop currently depends on a human's discipline in writing a paragraph.** That is
+   a real dependency and it is invisible from inside the system.
+
+Things I deliberately did not build, and why:
+- **Agent dispatch / execution.** Milestones beyond a single cycle need tag-two to change
+  code. That is the largest piece of machinery the project would have, and the README
+  warns hardest against it. The control says the graph's proposals are not yet good
+  enough to be worth executing, so building execution now would mechanise bad work.
+- **A `tag next` command.** Selection is already represented — "ready" is a fact about
+  dependencies and the HTML shows it. A command would have been presentation, not
+  capability.
+- **Retries, scheduling, model routing.** No run has pointed at any of them. Three of
+  the four format failures were fixed by making the check correct rather than by
+  retrying.
+
+An honest note on cost of evidence: four of twenty-one runs produced no graph because
+they were rejected, and every one of those rejections taught more than the graph would
+have. Preserving failed runs remains the highest-value mechanism in the repository.

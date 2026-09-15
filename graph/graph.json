@@ -68,6 +68,12 @@
       "title": "Enhance evidence collection in task proposals",
       "at": "2026-09-15T17:48:08.102Z",
       "outcome": "Worked 2026-09-15 (runs 16 to 19). Evidence citations are now checked against the run transcript: a graph whose evidence names a file the run did not read is rejected, the instructions say so, and nothing is stripped or retried. The durable graph and its rendering were also removed from the file-listing and file-reading tools. Measured by tag observe across four consecutive runs: run 15 invented 7 of 10 citations and read 1 file; run 16 invented 3 and read 4 files and called history; run 18 invented 3, two of them copied out of the durable graph it had read as a file; run 19 invented 0 of 6 and read 4 files. Run 17 produced no graph, reaching 116,999 of 120,000 request bytes after reading five files including the whole experiment log; the byte budget rose to 160,000 and the request limit fell from 10 to 8."
+    },
+    {
+      "node": "enhance-evidence-validation",
+      "title": "Enforce evidence validation",
+      "at": "2026-09-15T17:51:43.491Z",
+      "outcome": "Worked 2026-09-15 (runs 20 and 21 plus two control runs). Run 20, given a purely factual outcome that proposed nothing, produced clean citations and proposed work the repository had already implemented, citing that implementation as its evidence. Two control runs were then made against this repository as it stood at commit e1e580e, the same state the very first run planned against, with no experiment log, no durable graph and no human analysis of any run in its input. Broad objective: five nodes, one investigate node and four per-module review nodes all depending on it, structurally identical to the first run's graph twenty runs earlier, with one node proposing cost tracking that already existed. Bounded objective: three nodes, two of them concrete and correctly located in code, including the failure mode that really stopped run 17. ESTABLISHED: twenty runs of work improved research completeness and citation honesty and did not improve decomposition; the apparent improvement seen on this repository was mirroring of accumulated context. ESTABLISHED: a bounded objective decomposes materially better than the standing broad one, at no cost and with no code change."
     }
   ]
 }

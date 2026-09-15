@@ -11,21 +11,21 @@ article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}ar
 </style>
 <header><p>tag-two · proposed graph · 2026-09-15T17:47:08.283Z</p>
 <h1>Make tag-two better at achieving its purpose.</h1>
-<p>3 tasks · 2 ready for human selection · 1 dependency-blocked · 0 worked</p>
+<p>3 tasks · 1 ready for human selection · 1 dependency-blocked · 1 worked</p>
 <p>Outcomes below were recorded by a human after work was done outside tag-two. “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
 <section aria-label="Research"><h2>What the agent learned</h2><p>The repository describes an experiment in persistent, agent-assisted problem solving. The current implementation focuses on generating task graphs based on repository investigation. Recent outcomes indicate that expanding tool usage and enhancing evidence collection are areas of interest. The system has shown that directives in instructions can sometimes influence tool usage, but not reliably. Evidence collection has been improved with the addition of `tag observe`, which helps identify unread file citations.</p></section>
-<nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul><li><a href="#investigate-tool-usage">Investigate tool usage patterns</a> · ready</li><li><a href="#enhance-evidence-validation">Enforce evidence validation</a> · ready</li><li><a href="#explore-supply-mechanism">Explore durable state supply mechanisms</a> ← depends on <a href="#investigate-tool-usage">Investigate tool usage patterns</a></li></ul></nav>
+<nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul><li><a href="#investigate-tool-usage">Investigate tool usage patterns</a> · ready</li><li><a href="#enhance-evidence-validation">Enforce evidence validation</a> · worked</li><li><a href="#explore-supply-mechanism">Explore durable state supply mechanisms</a> ← depends on <a href="#investigate-tool-usage">Investigate tool usage patterns</a></li></ul></nav>
 <main><article id="investigate-tool-usage" class="ready">
 <p class="status">Ready for human selection</p>
 <h2>Investigate tool usage patterns</h2><h3>Why this matters</h3><p>Understanding how and when tools like `history` and `search` are used can help improve the planner&#39;s effectiveness. This builds on prior outcomes showing mixed results with tool directives.</p>
 <h3>Evidence / context</h3><ul><li>README.md:20 — The planner uses one OpenRouter model with read-only tools.</li><li>src/plan.js:21 — Instructions include using `history` and `search`.</li></ul>
 
 <h3>Depends on</h3><p>Nothing in this graph.</p>
-</article><article id="enhance-evidence-validation" class="ready">
-<p class="status">Ready for human selection</p>
+</article><article id="enhance-evidence-validation" class="worked">
+<p class="status">Worked — see recorded outcomes</p>
 <h2>Enforce evidence validation</h2><h3>Why this matters</h3><p>The addition of `tag observe` has shown that some runs cite unread files. Rejecting or flagging such graphs could improve the reliability of task proposals.</p>
 <h3>Evidence / context</h3><ul><li>test/tag.test.js:560 — Test case for rejecting graphs with unread file citations.</li><li>src/plan.js:182 — Validation checks for unread file citations.</li></ul>
-
+<h3>Recorded outcomes</h3><ul><li><strong>2026-09-15T17:51:43.491Z</strong> — Worked 2026-09-15 (runs 20 and 21 plus two control runs). Run 20, given a purely factual outcome that proposed nothing, produced clean citations and proposed work the repository had already implemented, citing that implementation as its evidence. Two control runs were then made against this repository as it stood at commit e1e580e, the same state the very first run planned against, with no experiment log, no durable graph and no human analysis of any run in its input. Broad objective: five nodes, one investigate node and four per-module review nodes all depending on it, structurally identical to the first run&#39;s graph twenty runs earlier, with one node proposing cost tracking that already existed. Bounded objective: three nodes, two of them concrete and correctly located in code, including the failure mode that really stopped run 17. ESTABLISHED: twenty runs of work improved research completeness and citation honesty and did not improve decomposition; the apparent improvement seen on this repository was mirroring of accumulated context. ESTABLISHED: a bounded objective decomposes materially better than the standing broad one, at no cost and with no code change.</li></ul>
 <h3>Depends on</h3><p>Nothing in this graph.</p>
 </article><article id="explore-supply-mechanism" class="blocked">
 <p class="status">Blocked by dependencies</p>
