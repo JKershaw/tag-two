@@ -556,3 +556,33 @@ test('a file containing the words of a partial-read notice is still reported as 
   ] } };
   assert.deepEqual((await observe(await graphFile(t, run))).filesRead, { 'src/repository.js': 'complete' });
 });
+
+test('a graph citing a file the run never read is rejected and preserved', async t => {
+  const directory = await fixture(t);
+  const invented = { ...graph(), nodes: [
+    { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — actually read'], dependsOn: [] },
+    { id: 'made-up', title: 'Ungrounded', reason: 'r', evidence: ['examples/never-existed.json — invented'], dependsOn: [] },
+  ] };
+  let calls = 0;
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : calls === 2 ? toolAnswer() : answer(JSON.stringify(invented))),
+  }), /cites 1 file\(s\) this run never read[\s\S]*made-up: examples\/never-existed\.json/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.match(failed.failure, /never read/);
+  assert.ok(failed.run.answer.includes('never-existed'), 'the rejected answer is kept');
+  await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+});
+
+test('a graph citing only files the run read is accepted', async t => {
+  const directory = await fixture(t);
+  const grounded = { ...graph(), nodes: [
+    { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — actually read', 'README.md — no line number'], dependsOn: [] },
+  ] };
+  let calls = 0;
+  await plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : calls === 2 ? toolAnswer() : answer(JSON.stringify(grounded))),
+  });
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).nodes.length, 1);
+});

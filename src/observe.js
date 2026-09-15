@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 // questions: what did it actually call, what did it actually read, and does its evidence point at
 // anything it opened? The last question is the durable graph's own top-ready node — real runs cite
 // files they never read. Nothing here calls a model; it only reports what a run's record contains.
-const cited = item => String(item).trim().split(/[\s:]/, 1)[0];
+export const cited = item => String(item).trim().split(/[\s:]/, 1)[0];
 
 export async function observe(runPath) {
   let record;
