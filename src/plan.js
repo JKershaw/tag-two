@@ -19,6 +19,10 @@ Propose roughly 3–6 tasks (maximum 8), not an exhaustive backlog. Every task m
 advances the objective and cite concrete repository evidence with paths and line numbers where possible.
 Dependencies must mean that a task really requires another task's result. Surface human questions or
 approval needs in reasons. Avoid speculative infrastructure. Do not execute tasks. Stop after planning.
+Before proposing a task, check in the code whether it is already done, and do not propose work the
+repository already implements. Documentation discussing a problem is not evidence that it is unsolved:
+where a document and the code disagree, the code is what exists. Propose work whose absence you
+confirmed in code, not the topics your context discusses most.
 Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
