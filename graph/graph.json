@@ -100,6 +100,24 @@
       "from": "tag check",
       "kind": "evidence",
       "text": "Checked 2026-09-15 in one bounded request ($0.00084). All 3 nodes of this durable graph are reported by its own recorded outcomes as already done or refuted, each with a verbatim quote: investigate-tool-usage (run 9 called history; a directive CAN produce a tool call, unreliably), enhance-evidence-validation (citations are already checked against the transcript and offending graphs rejected), explore-supply-mechanism (a third durable-state channel was tested in the epistemic/control trial). This graph proposes no unworked task. Also checked: run 86's fresh graph, 4 of 6 firmly stale; run 85's control graph, 1 of 5."
+    },
+    {
+      "at": "2026-09-15T21:08:20.403Z",
+      "from": "steward",
+      "kind": "intent",
+      "text": "TAG's purpose includes keeping human intent in control of AI execution. Human involvement is not scaffolding to be progressively eliminated. What should shrink is unnecessary human cognitive labour — re-explaining context, remembering what happened, diagnosing mechanical details an agent could investigate, carrying conclusions between runs — not human judgement, intent or redirection."
+    },
+    {
+      "at": "2026-09-15T21:10:58.970Z",
+      "from": "tag check",
+      "kind": "evidence",
+      "text": "Checked 2026-09-15, runs 85 to 88. Fresh graphs for the standing objective are mostly work the outcomes already report: run 85 (no input supplied) 1 of 5 flagged, run 86 (steward observation supplied) 5 of 6, run 87 4 of 5, run 88 3 of 5. Run 87's only unflagged node cites the steward observation and the check itself in its reason, so durable input reached a stateless run and shaped it. Supplying the observation did not stop the planner reproposing flagged work; test-bounded-objectives was proposed in 86 and again in 87, contradicted by a verbatim quote both times."
+    },
+    {
+      "at": "2026-09-15T21:10:59.046Z",
+      "from": "steward",
+      "kind": "correction",
+      "text": "A verified quote proves the sentence exists in an outcome, not that it supports the finding. On run 88 two of three done verdicts quote 'ESTABLISHED: twenty runs of work improved research completeness...' which reports that mirroring happens, not that reducing it was done; on run 85 implement-outcome-checks was flagged using the citation-guard outcome, which is a different check. Treat a quoted verdict as a pointer for a human to adjudicate in seconds, not as a decision. Do not build a gate on top of it."
     }
   ]
 }
