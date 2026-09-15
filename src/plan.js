@@ -7,7 +7,10 @@ const MODEL = 'deepseek/deepseek-chat-v3-0324';
 const API = 'https://openrouter.ai/api/v1';
 const MAX_REQUESTS = 10;
 const MAX_OUTPUT = 4096;
-const MAX_CONTEXT_BYTES = 80_000;
+// Raised from 80,000 after a real run read every file and could not send the request: this
+// repository's own experiment log had grown to 38,322 of 78,755 serialized tool bytes. The
+// bound exists to cap cost, which this does not threaten; it defers the growth problem.
+const MAX_CONTEXT_BYTES = 120_000;
 
 const instructions = `Investigate the repository before proposing a small useful task graph.
 Use list_files, read_file, search, and history yourself; no source excerpts have been selected for you.

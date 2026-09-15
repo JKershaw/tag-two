@@ -44,10 +44,11 @@ content. Existing `.tag` directories are never overwritten: preserve or move a
 previous experiment explicitly before starting another.
 
 The seed allows at most ten model requests, 4,096 output tokens per request and
-80,000 serialized request bytes. It checks model pricing and caps provider prices
+120,000 serialized request bytes. It checks model pricing and caps provider prices
 at $0.50/million input tokens and $1.50/million output tokens, with no per-request
 fee. At these limits, even conservatively counting each request byte as an input
-token leaves the run below $1 (roughly $0.47 before small protocol overhead).
+token leaves the run below $1 (roughly $0.66 before small protocol overhead).
+Observed runs cost well under a cent.
 Unavailable models, higher prices, network errors, exhausted limits or invalid
 graphs stop the run without automatic retries, JSON repair or fabricated tasks.
 A matched markdown fence around the answer is removed before parsing, which is an
