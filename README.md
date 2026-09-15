@@ -212,11 +212,10 @@ mirrored. It did not produce independent analysis.
 The clearest evidence is the first task. *"Ensure complete research before
 decomposition"* proposes work that was already finished in the code the agent had just
 read in full — `src/repository.js` returns whole files, and `test/tag.test.js` contains
-a test named for that behaviour. The agent proposed it because this README still
-described the gap as open at the time of the run. **Prose state outranked code state.**
-For a system meant to improve itself, that is the sharpest finding so far: the graph's
-usefulness is bounded by how current the project's written state is, and stale
-documentation reliably produces already-completed tasks.
+a test named for that behaviour. At the time of the run this README still described
+that gap as open, so the obvious inference was that stale prose had outranked code
+state. **The fifth run tested that inference directly and refuted it — see below.**
+The proposal survives accurate documentation, so staleness was not the cause.
 
 What is now established:
 
@@ -237,6 +236,48 @@ What is now established:
 Each objective was run exactly once per change. No run was repeated to obtain a more
 appealing graph, no proposed task was executed, and every archived artifact is
 unedited, including the two failures.
+
+**Fifth dogfood run (2026-09-15):** a controlled repeat. No source file changed
+between the fourth run and this one — only this README, which was corrected so that
+it no longer described complete research as an open problem. The unedited outputs are
+in [`examples/fifth-dogfood/graph.json`](examples/fifth-dogfood/graph.json) and
+[`examples/fifth-dogfood/graph.html`](examples/fifth-dogfood/graph.html), at a
+reported cost of **$0.006593**.
+
+**Assessment: the stale-documentation explanation is refuted, and the result is worse
+than that explanation would have been.** The graph's five node ids and every
+dependency between them are identical to the fourth run's, and the split of evidence
+citations is unchanged at six into this README and four into code. Correcting the
+documentation changed nothing.
+
+*"Ensure complete research before decomposition"* is still proposed first, and its
+own evidence now reads:
+
+> `src/repository.js:78-95 — Implementation of whole-file reads to avoid partial research.`
+
+The agent cited the finished implementation of the work as the reason to do the work.
+It is not failing to notice that the code contradicts the task; it read the code,
+described it accurately, and proposed the task anyway. So the mirroring is not caused
+by incomplete research, and not by stale prose either. Both plausible causes have now
+been tested against real runs and eliminated. What remains is that the agent is
+selecting the most discussed topics in its context and restating them as tasks,
+without checking whether the work already exists.
+
+Two smaller observations from the same evidence:
+
+- Across five runs the agent has never once used `search` or `history`. Every run is
+  the same shape: list the files, read them, answer. Half the investigation tools it
+  is offered have never been exercised.
+- Runs four and five produced the same graph structure from a materially different
+  README, so at this temperature the planner is stable enough that differences between
+  runs can be attributed to input changes rather than sampling noise. That is what
+  makes these comparisons meaningful, and it is the reason no run needed repeating.
+
+This is the current edge of the experiment. The next change should address the one
+behaviour now isolated by elimination — that proposed work is never checked against
+what already exists — rather than research depth, documentation accuracy, output
+format or any orchestration machinery, all of which have now been ruled out by runs
+rather than by argument.
 
 ---
 
