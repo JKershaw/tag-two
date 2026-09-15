@@ -1,0 +1,79 @@
+{
+  "objective": "Make tag-two better at achieving its purpose.",
+  "summary": "The repository describes an experiment in persistent, agent-assisted problem solving. The current implementation focuses on generating task graphs based on repository investigation. Recent outcomes indicate that expanding tool usage and enhancing evidence collection are areas of interest. The system has shown that directives in instructions can sometimes influence tool usage, but not reliably. Evidence collection has been improved with the addition of `tag observe`, which helps identify unread file citations.",
+  "nodes": [
+    {
+      "id": "investigate-tool-usage",
+      "title": "Investigate tool usage patterns",
+      "reason": "Understanding how and when tools like `history` and `search` are used can help improve the planner's effectiveness. This builds on prior outcomes showing mixed results with tool directives.",
+      "evidence": [
+        "README.md:20 — The planner uses one OpenRouter model with read-only tools.",
+        "src/plan.js:21 — Instructions include using `history` and `search`."
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "enhance-evidence-validation",
+      "title": "Enforce evidence validation",
+      "reason": "The addition of `tag observe` has shown that some runs cite unread files. Rejecting or flagging such graphs could improve the reliability of task proposals.",
+      "evidence": [
+        "test/tag.test.js:560 — Test case for rejecting graphs with unread file citations.",
+        "src/plan.js:182 — Validation checks for unread file citations."
+      ],
+      "dependsOn": []
+    },
+    {
+      "id": "explore-supply-mechanism",
+      "title": "Explore durable state supply mechanisms",
+      "reason": "Prior outcomes suggest that the way durable state is supplied affects tool usage and evidence collection. Investigating alternative mechanisms could lead to more reliable behavior.",
+      "evidence": [
+        "src/plan.js:62 — Prior outcomes are supplied to the planner.",
+        "src/plan.js:128 — The durable state is withheld until the repository is investigated."
+      ],
+      "dependsOn": [
+        "investigate-tool-usage"
+      ]
+    }
+  ],
+  "run": {
+    "model": "deepseek/deepseek-chat-v3-0324",
+    "createdAt": "2026-09-15T17:47:08.283Z",
+    "requests": 3,
+    "costUsd": 0.00790675,
+    "priorGraph": "/home/user/tag-two/graph/graph.json",
+    "investigation": [],
+    "transcript": "examples/nineteenth-dogfood/graph.json"
+  },
+  "outcomes": [
+    {
+      "node": "expand-tools",
+      "title": "Expand tool usage beyond file reading",
+      "at": "2026-09-15T17:25:32.463Z",
+      "outcome": "Worked 2026-09-15 (eighth dogfood run). One sentence was added to the planner's system instructions naming history and search and giving a reason to call them: 'Call history to see what has actually changed recently, and search to check a specific claim, before treating any document's description of an open problem as current.' The run that followed made six tool calls, all list_files or read_file; neither search nor history was called once. REFUTED: a system-instruction directive does not cause this model to make a tool call it was not already going to make, which matches run 2's result for a directive inside a tool result. Evidence: examples/eighth-dogfood/failed-run.json. Do not reopen this node by instruction; if the planner is to see history the system must supply it, and no run yet shows that seeing history would improve decomposition."
+    },
+    {
+      "node": "expand-tools",
+      "title": "Expand tool usage beyond file reading",
+      "at": "2026-09-15T17:28:03.193Z",
+      "outcome": "CORRECTION 2026-09-15 (ninth dogfood run). The refutation recorded above was drawn from a single run and is wrong as stated. With the identical instruction still in place, run 9 called history for the first time in nine runs. So a system-instruction directive CAN produce a tool call from this model; it just does not do so reliably, and one run is not enough to refute a behavioural hypothesis. Evidence: examples/ninth-dogfood/failed-run.json, investigation entry 7. What run 9 also showed is more useful: it never opened graph/graph.json, so the outcome recorded on this node had no effect on its planning, and it proposed this very node again. Recording an outcome is not the same as consulting one."
+    },
+    {
+      "node": "enhance-evidence",
+      "title": "Enhance evidence collection in task proposals",
+      "at": "2026-09-15T17:41:43.534Z",
+      "outcome": "Worked 2026-09-15 (fifteenth change). Built `tag observe`, which reports what a run actually did and lists every evidence citation naming a file the run never opened. Measured across all eight archived graphs: runs 1, 2, 4, 5 and 7 invented 0 of 44 citations; runs 12 and 13, each handed the whole durable graph, invented 4 of 8; run 14, handed only recorded outcomes, invented 2 of 8. ESTABLISHED: invented citations did not exist before durable state was supplied, and reducing what is supplied reduces them. The defect is caused by the supply mechanism, not by the model's general habits. Not yet tried: rejecting or flagging a graph whose evidence cites unread files."
+    },
+    {
+      "node": "enhance-evidence",
+      "title": "Enhance evidence collection in task proposals",
+      "at": "2026-09-15T17:48:08.102Z",
+      "outcome": "Worked 2026-09-15 (runs 16 to 19). Evidence citations are now checked against the run transcript: a graph whose evidence names a file the run did not read is rejected, the instructions say so, and nothing is stripped or retried. The durable graph and its rendering were also removed from the file-listing and file-reading tools. Measured by tag observe across four consecutive runs: run 15 invented 7 of 10 citations and read 1 file; run 16 invented 3 and read 4 files and called history; run 18 invented 3, two of them copied out of the durable graph it had read as a file; run 19 invented 0 of 6 and read 4 files. Run 17 produced no graph, reaching 116,999 of 120,000 request bytes after reading five files including the whole experiment log; the byte budget rose to 160,000 and the request limit fell from 10 to 8."
+    },
+    {
+      "node": "enhance-evidence-validation",
+      "title": "Enforce evidence validation",
+      "at": "2026-09-15T17:51:43.491Z",
+      "outcome": "Worked 2026-09-15 (runs 20 and 21 plus two control runs). Run 20, given a purely factual outcome that proposed nothing, produced clean citations and proposed work the repository had already implemented, citing that implementation as its evidence. Two control runs were then made against this repository as it stood at commit e1e580e, the same state the very first run planned against, with no experiment log, no durable graph and no human analysis of any run in its input. Broad objective: five nodes, one investigate node and four per-module review nodes all depending on it, structurally identical to the first run's graph twenty runs earlier, with one node proposing cost tracking that already existed. Bounded objective: three nodes, two of them concrete and correctly located in code, including the failure mode that really stopped run 17. ESTABLISHED: twenty runs of work improved research completeness and citation honesty and did not improve decomposition; the apparent improvement seen on this repository was mirroring of accumulated context. ESTABLISHED: a bounded objective decomposes materially better than the standing broad one, at no cost and with no code change."
+    }
+  ]
+}

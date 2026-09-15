@@ -7,6 +7,9 @@ import { execFileSync } from 'node:child_process';
 import { validateGraph, renderGraph } from '../src/graph.js';
 import { repositoryTools } from '../src/repository.js';
 import { plan } from '../src/plan.js';
+import { record } from '../src/record.js';
+import { adopt } from '../src/adopt.js';
+import { observe, describe } from '../src/observe.js';
 
 const objective = 'Improve the project';
 const graph = () => ({
@@ -289,12 +292,333 @@ test('a run that fails before investigating leaves no directory behind', async t
   await assert.rejects(readFile(join(directory, '.tag', 'failed-run.json')), { code: 'ENOENT' });
 });
 
-test('tool loop is bounded to ten requests', async t => {
+test('tool loop is bounded to eight requests', async t => {
   const directory = await fixture(t);
   let calls = 0;
   await assert.rejects(plan(objective, directory, {
     apiKey: 'test-only',
     fetchImpl: async () => ++calls === 1 ? catalog() : toolAnswer(),
   }), /Investigation limit/);
-  assert.equal(calls, 11);
+  assert.equal(calls, 9);
+});
+
+const planned = () => ({
+  ...graph(),
+  run: { model: 'test-model', createdAt: '2026-09-15T00:00:00.000Z', requests: 2, costUsd: 0.001, investigation: [] },
+});
+
+async function graphFile(t, value = planned()) {
+  const directory = await mkdtemp(join(tmpdir(), 'tag-two-record-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const path = join(directory, 'graph.json');
+  await writeFile(path, JSON.stringify(value, null, 2) + '\n');
+  return path;
+}
+
+test('record appends an outcome to one node and re-renders the HTML', async t => {
+  const path = await graphFile(t);
+  const first = await record(path, 'investigate', '  Worked it; the hypothesis was refuted.  ', { now: () => '2026-09-16T00:00:00.000Z' });
+  assert.equal(first.outcomes, 1);
+  assert.equal(first.htmlPath, path.replace(/json$/, 'html'));
+  const after = JSON.parse(await readFile(path, 'utf8'));
+  assert.deepEqual(after.outcomes, [{
+    node: 'investigate', title: 'Investigate usefulness',
+    at: '2026-09-16T00:00:00.000Z', outcome: 'Worked it; the hypothesis was refuted.',
+  }]);
+  assert.deepEqual(after.nodes, graph().nodes, 'the nodes themselves are untouched');
+  assert.equal(after.objective, objective, 'the rest of the graph is preserved verbatim');
+
+  const second = await record(path, 'investigate', 'And again later.', { now: () => '2026-09-17T00:00:00.000Z' });
+  assert.equal(second.outcomes, 2, 'outcomes accumulate rather than replace');
+
+  const html = await readFile(first.htmlPath, 'utf8');
+  assert.match(html, /Recorded outcomes/);
+  assert.match(html, /the hypothesis was refuted/);
+  assert.match(html, /1 worked/);
+});
+
+test('record refuses an unknown node, an empty outcome, a missing graph and an invalid graph', async t => {
+  const path = await graphFile(t);
+  await assert.rejects(record(path, 'no-such-node', 'anything'), /No node "no-such-node"/);
+  await assert.rejects(record(path, 'investigate', '   '), /An outcome is required/);
+  await assert.rejects(record(join(path, 'missing.json'), 'investigate', 'x'), /Could not read a graph/);
+  await assert.rejects(record(path.replace(/json$/, 'txt'), 'investigate', 'x'), /graph\.json/);
+
+  const broken = await graphFile(t, { ...planned(), summary: '' });
+  await assert.rejects(record(broken, 'investigate', 'x'), /research summary/);
+  const unplanned = await graphFile(t, graph());
+  await assert.rejects(record(unplanned, 'investigate', 'x'), /run provenance/);
+  const unchanged = JSON.parse(await readFile(path, 'utf8'));
+  assert.equal(unchanged.outcomes, undefined, 'a rejected recording leaves the graph alone');
+});
+
+test('validation accepts recorded outcomes and rejects malformed ones', () => {
+  const entry = { node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z', outcome: 'Refuted.' };
+  assert.equal(validateGraph({ ...graph(), outcomes: [entry] }, objective).outcomes.length, 1);
+  // An outcome for a node this graph no longer has is evidence, not an error: ids do not survive replanning.
+  assert.equal(validateGraph({ ...graph(), outcomes: [{ ...entry, node: 'long-gone' }] }, objective).outcomes.length, 1);
+  assert.equal(validateGraph({ ...graph(), outcomes: [] }, objective).outcomes.length, 0);
+  for (const bad of [[{ ...entry, at: '' }], [{ ...entry, outcome: ' ' }], [{ at: 'now', outcome: 'x' }], 'outcome']) {
+    assert.throws(() => validateGraph({ ...graph(), outcomes: bad }, objective), /Recorded outcomes/);
+  }
+});
+
+test('an objective echoed without its trailing full stop is accepted, a different one is not', () => {
+  // Two consecutive real runs lost a valid graph to a missing '.'.
+  const drifted = { ...graph(), objective: `${objective}.` };
+  assert.equal(validateGraph(drifted, objective).objective, objective, 'the asked objective wins');
+  assert.equal(validateGraph({ ...graph(), objective: `  ${objective}  ` }, objective).objective, objective);
+  assert.throws(() => validateGraph({ ...graph(), objective: 'Improve something else' }, objective), /original objective/);
+  assert.throws(() => validateGraph({ ...graph(), objective: 'Improve the' }, objective), /original objective/);
+  assert.throws(() => validateGraph({ ...graph(), objective: '' }, objective), /original objective/);
+});
+
+test('the planner is handed the recorded outcomes, and nothing else from the durable graph', async t => {
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  const durable = planned();
+  durable.outcomes = [{ node: 'investigate', title: 'Investigate usefulness', at: '2026-09-16T00:00:00.000Z', outcome: 'Worked and refuted.' }];
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
+
+  let sent;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    const messages = JSON.parse(options.body).messages;
+    if (calls === 2) {
+      assert.equal(messages.length, 2, 'the graph is withheld until the repository is investigated');
+      assert.equal(messages[1].content, objective);
+      return toolAnswer();
+    }
+    sent = messages.at(-1);
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  assert.equal(sent.role, 'user');
+  assert.match(sent.content, /^Work already performed on this objective/);
+  assert.match(sent.content, /- Investigate usefulness \(recorded 2026-09-16T00:00:00\.000Z\): Worked and refuted\./);
+  assert.doesNotMatch(sent.content, /Find evidence of progress/, 'node reasons are not resent');
+  assert.doesNotMatch(sent.content, /README\.md:1/, 'node evidence strings are not resent');
+  assert.doesNotMatch(sent.content, /Demonstrate improvement/, 'nodes without outcomes are not resent');
+  const written = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
+  assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
+});
+
+test('a repository with no durable graph is planned exactly as before, and a corrupt one stops the run', async t => {
+  const directory = await fixture(t);
+  let prompt;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    if (calls === 2) return toolAnswer();
+    prompt = JSON.parse(options.body).messages[1].content;
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  assert.equal(prompt, objective);
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).run.priorGraph, null);
+
+  // A tracked graph nobody has recorded anything against carries no durable knowledge yet.
+  const empty = await fixture(t);
+  await mkdir(join(empty, 'graph'));
+  await writeFile(join(empty, 'graph', 'graph.json'), JSON.stringify(planned(), null, 2) + '\n');
+  let turns = 0;
+  await plan(objective, empty, {
+    apiKey: 'test-only',
+    fetchImpl: async (url, options) => {
+      if (++turns === 1) return catalog();
+      const messages = JSON.parse(options.body).messages;
+      if (turns === 2) return toolAnswer();
+      assert.deepEqual(messages.map(item => item.role), ['system', 'user', 'assistant', 'tool']);
+      return answer(JSON.stringify(graph()));
+    },
+  });
+
+  const broken = await fixture(t);
+  await mkdir(join(broken, 'graph'));
+  await writeFile(join(broken, 'graph', 'graph.json'), '{"objective":"x"}');
+  await assert.rejects(plan(objective, broken, { apiKey: 'test-only', fetchImpl }), /research summary/);
+  await assert.rejects(readFile(join(broken, '.tag', 'graph.json')), { code: 'ENOENT' });
+});
+
+test('an answer rejected for skipping investigation is still preserved', async t => {
+  // A real run answered from its supplied durable graph without reading anything, was
+  // correctly rejected, and its answer vanished: the run cost money and taught nothing.
+  const directory = await fixture(t);
+  let calls = 0;
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : answer(JSON.stringify(graph()))),
+  }), /without reading repository evidence/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.match(failed.failure, /without reading repository evidence/);
+  assert.equal(JSON.parse(failed.run.answer).nodes.length, 2);
+  assert.deepEqual(failed.run.investigation, []);
+});
+
+test('adopt replaces a durable graph and carries every recorded outcome across', async t => {
+  const durablePath = await graphFile(t);
+  await record(durablePath, 'investigate', 'Worked and refuted.', { now: () => '2026-09-16T00:00:00.000Z' });
+  await record(durablePath, 'demonstrate', 'Still open.', { now: () => '2026-09-17T00:00:00.000Z' });
+
+  // A replanned graph shares no node ids with the old one, which is why outcomes live on the graph.
+  const replanned = { ...planned(), summary: 'A later run learned more.', nodes: [
+    { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
+  ] };
+  const result = await adopt(await graphFile(t, replanned), durablePath);
+  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2 });
+
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.nodes.map(node => node.id), ['something-else']);
+  // A durable graph too large for one read_file call cannot be read by the planner it informs.
+  assert.deepEqual(after.run.investigation, [], 'the transcript stays with the archived run');
+  assert.match(after.run.transcript, /graph\.json$/);
+  assert.equal(after.summary, 'A later run learned more.');
+  assert.deepEqual(after.outcomes.map(item => item.outcome), ['Worked and refuted.', 'Still open.']);
+
+  const html = await readFile(result.htmlPath, 'utf8');
+  assert.match(html, /no longer contains/, 'outcomes outlive the nodes that proposed them');
+  assert.match(html, /Worked and refuted\./);
+});
+
+test('adopt refuses a different objective, a bad path and an invalid graph, and changes nothing', async t => {
+  const durablePath = await graphFile(t);
+  await record(durablePath, 'investigate', 'Worked and refuted.', { now: () => '2026-09-16T00:00:00.000Z' });
+  const before = await readFile(durablePath, 'utf8');
+
+  const elsewhere = await graphFile(t, { ...planned(), objective: 'A different objective' });
+  await assert.rejects(adopt(elsewhere, durablePath), /different objective/);
+  await assert.rejects(adopt(await graphFile(t, { ...planned(), summary: '' }), durablePath), /research summary/);
+  await assert.rejects(adopt(join(durablePath, 'missing.json'), durablePath), /Could not read a graph/);
+  await assert.rejects(adopt(durablePath, durablePath.replace(/json$/, 'txt')), /graph\.json/);
+  assert.equal(await readFile(durablePath, 'utf8'), before, 'a refused adoption leaves the durable graph alone');
+});
+
+test('adopt into a repository with no durable graph yet just writes one', async t => {
+  const source = await graphFile(t);
+  const target = join(source, '..', 'fresh.json');
+  const result = await adopt(source, target);
+  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0 });
+  assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
+});
+
+const investigated = (path, result) => ({ tool: 'read_file', arguments: { path }, result });
+
+test('observe reports what a run did and which evidence names files it never read', async t => {
+  const run = {
+    ...planned(),
+    nodes: [
+      { id: 'a', title: 'A', reason: 'r', evidence: ['src/plan.js:1 — read it'], dependsOn: [] },
+      { id: 'b', title: 'B', reason: 'r', evidence: ['examples/old.json — never opened', 'README.md:2 — read it'], dependsOn: [] },
+    ],
+  };
+  run.run.priorGraph = 'graph/graph.json';
+  run.run.investigation = [
+    { tool: 'list_files', arguments: {}, result: '{"files":[]}' },
+    investigated('README.md', '1: hello\n[Lines 1-1 of 1. End of README.md; the whole file from line 1 has been shown.]'),
+    investigated('src/plan.js', '1: code\n[PARTIAL READ: lines 1-1 of 9. The remaining 8 lines of src/plan.js have NOT been shown.]'),
+    investigated('secrets', 'Tool unavailable or invalid arguments.'),
+  ];
+  const report = await observe(await graphFile(t, run));
+  assert.equal(report.outcome, 'graph');
+  assert.deepEqual(report.calls, { list_files: 1, read_file: 3 });
+  assert.deepEqual(report.unusedTools, ['search', 'history']);
+  assert.deepEqual(report.filesRead, { 'README.md': 'complete', 'src/plan.js': 'partial' });
+  assert.deepEqual(report.evidenceCitingUnreadFiles, [{ node: 'b', evidence: 'examples/old.json — never opened' }]);
+  assert.equal(report.priorGraph, 'graph/graph.json');
+  const text = describe(report);
+  assert.match(text, /Produced a graph of 2 nodes/);
+  assert.match(text, /never called: search, history/);
+  assert.match(text, /examples\/old\.json/);
+});
+
+test('observe reads a failed run, and a file that is neither is refused', async t => {
+  const failed = {
+    objective, failure: 'Invalid planner graph.',
+    run: { model: 'test-model', requests: 2, costUsd: 0.001, answer: '{}', investigation: [
+      investigated('README.md', '1: hello\n[Lines 1-1 of 1. End of README.md; the whole file from line 1 has been shown.]'),
+    ] },
+  };
+  const report = await observe(await graphFile(t, failed));
+  assert.equal(report.outcome, 'failed');
+  assert.equal(report.answerPreserved, true);
+  assert.equal(report.evidenceCitingUnreadFiles.length, 0);
+  assert.match(describe(report), /Produced no graph\. Failure: Invalid planner graph\. Answer preserved: yes/);
+
+  await assert.rejects(observe(await graphFile(t, { anything: true })), /not a graph or a failed run/);
+  await assert.rejects(observe('no-such-run.json'), /Could not read a run/);
+});
+
+test('a file containing the words of a partial-read notice is still reported as read whole', async t => {
+  // src/repository.js builds that notice, so every run that read it looked like a partial read.
+  const run = { ...planned(), run: { ...planned().run, investigation: [
+    investigated('src/repository.js', '1: `[PARTIAL READ: lines ${start}`\n[Lines 1-1 of 1. End of src/repository.js; the whole file from line 1 has been shown.]'),
+  ] } };
+  assert.deepEqual((await observe(await graphFile(t, run))).filesRead, { 'src/repository.js': 'complete' });
+});
+
+test('a graph citing a file the run never read is rejected and preserved', async t => {
+  const directory = await fixture(t);
+  const invented = { ...graph(), nodes: [
+    { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — actually read'], dependsOn: [] },
+    { id: 'made-up', title: 'Ungrounded', reason: 'r', evidence: ['examples/never-existed.json — invented'], dependsOn: [] },
+  ] };
+  let calls = 0;
+  await assert.rejects(plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : calls === 2 ? toolAnswer() : answer(JSON.stringify(invented))),
+  }), /cites 1 file\(s\) this run never read[\s\S]*made-up: examples\/never-existed\.json/);
+  const failed = JSON.parse(await readFile(join(directory, '.tag', 'failed-run.json'), 'utf8'));
+  assert.match(failed.failure, /never read/);
+  assert.ok(failed.run.answer.includes('never-existed'), 'the rejected answer is kept');
+  await assert.rejects(readFile(join(directory, '.tag', 'graph.json')), { code: 'ENOENT' });
+});
+
+test('a graph citing only files the run read is accepted', async t => {
+  const directory = await fixture(t);
+  const grounded = { ...graph(), nodes: [
+    { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — actually read', 'README.md — no line number'], dependsOn: [] },
+  ] };
+  let calls = 0;
+  await plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async () => (++calls === 1 ? catalog() : calls === 2 ? toolAnswer() : answer(JSON.stringify(grounded))),
+  });
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).nodes.length, 1);
+});
+
+test('the durable graph is not also offered to the planner as a file to read', async t => {
+  // A real run read graph/graph.json and copied node bodies and their citations out of it.
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(planned(), null, 2) + '\n');
+  await writeFile(join(directory, 'graph', 'graph.html'), '<p>rendered</p>');
+  await writeFile(join(directory, 'graph', 'notes.md'), 'an ordinary tracked file\n');
+  execFileSync('git', ['-C', directory, 'add', 'graph']);
+
+  let listed;
+  let denied;
+  let calls = 0;
+  await plan(objective, directory, {
+    apiKey: 'test-only',
+    fetchImpl: async (url, options) => {
+      if (++calls === 1) return catalog();
+      if (calls === 2) return toolAnswer('list_files', {});
+      if (calls === 3) {
+        listed = JSON.parse(options.body).messages.at(-1).content;
+        return toolAnswer('read_file', { path: 'graph/graph.json' });
+      }
+      if (calls === 4) {
+        denied = JSON.parse(options.body).messages.at(-1).content;
+        return toolAnswer();
+      }
+      return answer(JSON.stringify({ ...graph(), nodes: [
+        { id: 'real', title: 'Grounded', reason: 'r', evidence: ['README.md:1 — read'], dependsOn: [] },
+      ] }));
+    },
+  });
+  assert.doesNotMatch(listed, /graph\/graph\.json/, 'the durable graph is not listed');
+  assert.doesNotMatch(listed, /graph\/graph\.html/, 'nor its rendering');
+  assert.match(listed, /graph\/notes\.md/, 'other files in the same directory still are');
+  assert.match(denied, /Choose a listed tracked file|Tool unavailable/, 'and it cannot be read by name');
 });

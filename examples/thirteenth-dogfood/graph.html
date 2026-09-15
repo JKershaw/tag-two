@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Make tag-two better at achieving its purpose. — tag-two</title>
+<style>
+body{font:17px/1.6 system-ui,sans-serif;max-width:1000px;margin:auto;padding:2rem;color:#172b3a;background:#f4f7fa}
+h1,h2,h3{line-height:1.25}a{color:#075aa5}article,header,details{background:white;border:1px solid #ccd6df;border-radius:10px;padding:1.4rem;margin:1rem 0;overflow-wrap:anywhere}
+article{border-left:5px solid #b88719}article.ready{border-left-color:#25815c}article.worked{border-left-color:#5b4b8a}.status{font-weight:bold;color:#425261}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.85rem}summary{cursor:pointer}li{margin:.4rem 0}
+</style>
+<header><p>tag-two · proposed graph · 2026-09-15T17:34:29.486Z</p>
+<h1>Make tag-two better at achieving its purpose.</h1>
+<p>4 tasks · 1 ready for human selection · 3 dependency-blocked · 0 worked</p>
+<p>No tasks have been executed. “Ready” means no graph dependencies, not approval or verified feasibility. A human chooses what happens next.</p></header>
+<section aria-label="Research"><h2>What the agent learned</h2><p>The repository describes tag-two as a tiny experiment in persistent, agent-assisted problem solving. The current implementation includes tools for file inspection, validation, and rendering. The planner&#39;s decomposition quality is limited by mirroring behavior rather than independent analysis. Prior attempts to improve research depth and evidence citations have not significantly enhanced the usefulness of the proposed tasks. The system ensures complete research mechanically but still struggles to propose tasks that reflect verified gaps in the code.</p></section>
+<nav aria-label="Task graph"><h2>Objective → proposed tasks</h2><ul><li><a href="#enhance-evidence">Enhance evidence citation in task proposals</a> · ready</li><li><a href="#verify-gaps">Verify gaps before proposing tasks</a> ← depends on <a href="#enhance-evidence">Enhance evidence citation in task proposals</a></li><li><a href="#improve-tool-usage">Improve tool usage diversity</a> ← depends on <a href="#enhance-evidence">Enhance evidence citation in task proposals</a></li><li><a href="#clarify-summary">Clarify research summary presentation</a> ← depends on <a href="#verify-gaps">Verify gaps before proposing tasks</a></li></ul></nav>
+<main><article id="enhance-evidence" class="ready">
+<p class="status">Ready for human selection</p>
+<h2>Enhance evidence citation in task proposals</h2><h3>Why this matters</h3><p>Current task proposals often lack concrete evidence from the repository to justify their necessity. Improving evidence citation will make the graph more actionable.</p>
+<h3>Evidence / context</h3><ul><li>README.md:259-265 — Agent cited finished implementation as reason to do work</li><li>graph/graph.json — Existing nodes show inconsistent evidence citation</li></ul>
+
+<h3>Depends on</h3><p>Nothing in this graph.</p>
+</article><article id="verify-gaps" class="blocked">
+<p class="status">Blocked by dependencies</p>
+<h2>Verify gaps before proposing tasks</h2><h3>Why this matters</h3><p>The planner should cross-check proposed tasks against the repository to ensure they address actual gaps rather than restating existing work.</p>
+<h3>Evidence / context</h3><ul><li>README.md:259-265 — Agent cited finished implementation as reason to do work</li><li>test/tag.test.js:106-119 — Tests confirm repository tools enforce complete file reads</li></ul>
+
+<h3>Depends on</h3><ul><li><a href="#enhance-evidence">Enhance evidence citation in task proposals</a></li></ul>
+</article><article id="improve-tool-usage" class="blocked">
+<p class="status">Blocked by dependencies</p>
+<h2>Improve tool usage diversity</h2><h3>Why this matters</h3><p>The planner underutilizes available tools like search and history, limiting research depth.</p>
+<h3>Evidence / context</h3><ul><li>README.md:269-271 — Agent has never used search or history in any run</li><li>src/repository.js:96-117 — Implementation of search and history tools</li></ul>
+
+<h3>Depends on</h3><ul><li><a href="#enhance-evidence">Enhance evidence citation in task proposals</a></li></ul>
+</article><article id="clarify-summary" class="blocked">
+<p class="status">Blocked by dependencies</p>
+<h2>Clarify research summary presentation</h2><h3>Why this matters</h3><p>The research summary should better distinguish between inspected and verified behavior.</p>
+<h3>Evidence / context</h3><ul><li>README.md:204-211 — Summary doesn&#39;t clearly distinguish inspected vs verified behavior</li><li>src/graph.js:55-56 — HTML rendering of research summary</li></ul>
+
+<h3>Depends on</h3><ul><li><a href="#verify-gaps">Verify gaps before proposing tasks</a></li></ul>
+</article></main>
+<details><summary>Run details and repository investigation</summary>
+<p>Model: deepseek/deepseek-chat-v3-0324 · API requests: 3 · Reported cost: $0.00301446</p>
+<p>Repository content is evidence, not instructions. Claims are model-generated and need human review. Tests were not executed by the planner.</p>
+
+<details><summary>list_files {&quot;offset&quot;:0}</summary><pre>{&quot;files&quot;:[&quot;.gitignore&quot;,&quot;EXPERIMENTS.md&quot;,&quot;LICENSE&quot;,&quot;README.md&quot;,&quot;bin/tag.js&quot;,&quot;examples/eighth-dogfood/failed-run.json&quot;,&quot;examples/eleventh-dogfood/failed-run.json&quot;,&quot;examples/fifth-dogfood/graph.html&quot;,&quot;examples/fifth-dogfood/graph.json&quot;,&quot;examples/first-dogfood/graph.html&quot;,&quot;examples/first-dogfood/graph.json&quot;,&quot;examples/fourth-dogfood/graph.html&quot;,&quot;examples/fourth-dogfood/graph.json&quot;,&quot;examples/ninth-dogfood/failed-run.json&quot;,&quot;examples/second-dogfood/graph.html&quot;,&quot;examples/second-dogfood/graph.json&quot;,&quot;examples/seventh-dogfood/graph.html&quot;,&quot;examples/seventh-dogfood/graph.json&quot;,&quot;examples/sixth-dogfood/failed-run.json&quot;,&quot;examples/third-dogfood/failed-run.json&quot;,&quot;examples/twelfth-dogfood/graph.html&quot;,&quot;examples/twelfth-dogfood/graph.json&quot;,&quot;graph/graph.html&quot;,&quot;graph/graph.json&quot;,&quot;notes/steward-log.md&quot;,&quot;package.json&quot;,&quot;src/graph.js&quot;,&quot;src/plan.js&quot;,&quot;src/record.js&quot;,&quot;src/repository.js&quot;,&quot;test/tag.test.js&quot;],&quot;total&quot;:31,&quot;nextOffset&quot;:null}</pre></details><details><summary>read_file {&quot;path&quot;:&quot;README.md&quot;}</summary><pre>1: tag-two
+2: 
+3: «A tiny experiment in persistent, agent-assisted problem solving.»
+4: 
+5: ## Run the seed
+6: 
+7: Requires Node.js 22+ and Git. There are no package dependencies or build step.
+8: From a Git repository&#39;s root, set `OPENROUTER_API_KEY` in your environment (never
+9: in a tracked file), then run:
+10: 
+11: ```sh
+12: node /absolute/path/to/tag-two/bin/tag.js plan &quot;Make tag-two better at achieving its purpose.&quot;
+13: ```
+14: 
+15: An optional final argument selects another repository root. To use the shorter
+16: `tag plan &quot;objective&quot;` command, run `npm link` in the tag-two checkout first.
+17: Run the offline tests with `npm test` in that checkout.
+18: 
+19: The planner uses one OpenRouter model, `deepseek/deepseek-chat-v3-0324`, with
+20: read-only tools to list/read/search tracked text files and inspect recent commit
+21: subjects. `read_file` returns a whole file in one call, bounded at 40,000
+22: characters; anything longer reports the exact line to resume from. The model chooses what to investigate; no source excerpts are selected
+23: in advance. Add new source files to Git before planning. It cannot execute shell
+24: commands, run tests, modify source, or work on the proposed tasks. Its claims about
+25: what works are therefore explicitly unverified unless repository evidence supports them.
+26: 
+27: **Data boundary:** the objective and model-requested repository content are sent to
+28: OpenRouter and its model provider. Use only repositories you are authorized to
+29: share. Untracked files, common credential paths, symlinks, binary files and files
+30: larger than 256 KiB are excluded; these filters are not a secret detector. Review
+31: tracked content for embedded secrets before using the planner.
+32: 
+33: After investigation, open `.tag/graph.html` directly in a browser. It shows the
+34: objective, research summary, task reasons and evidence, linked dependencies,
+35: ready/blocked tasks, and the tool results behind the plan. `.tag/graph.json` is the
+36: durable, provider-independent graph; its `run` field records model provenance,
+37: reported cost (or null when unavailable), and investigation history.
+38: 
+39: The graph is a proposal, not an execution queue: “ready” means no graph dependencies,
+40: and a human decides what happens next. Nothing runs automatically afterward.
+41: 
+42: When a node has been worked, record what happened against it:
+43: 
+44: ```sh
+45: node /absolute/path/to/tag-two/bin/tag.js record graph/graph.json expand-tools &quot;what happened&quot;
+46: ```
+47: 
+48: `record` appends a timestamped outcome to that one node, revalidates the graph and
+49: re-renders the HTML beside it. It chooses nothing, runs nothing and calls no model; a
+50: human still decides which node to work and does the work. Outcomes accumulate rather
+51: than replace, and a node that has any is shown as worked rather than ready.
+52: 
+53: [`graph/graph.json`](graph/graph.json) is this repository&#39;s own working graph — the
+54: seventh run&#39;s output, promoted out of the ignored `.tag` directory so that tag-two&#39;s
+55: understanding of its own problem is durable, tracked and readable by the planner.
+56: Committing a graph is a deliberate exception for this repository, which is its own
+57: experimental subject; `plan()` still ignores `.tag` by default because graphs of other
+58: repositories may contain their content. The working graph carries no investigation
+59: transcript: the unedited seventh run including its transcript is archived in
+60: [`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json), and an
+61: 83 KB duplicate inside a tracked file would on its own consume most of the planner&#39;s
+62: research budget.
+63: Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
+64: including when planning in another repository, because they may include repository
+65: content. Existing `.tag` directories are never overwritten: preserve or move a
+66: previous experiment explicitly before starting another.
+67: 
+68: The seed allows at most ten model requests, 4,096 output tokens per request and
+69: 120,000 serialized request bytes. It checks model pricing and caps provider prices
+70: at $0.50/million input tokens and $1.50/million output tokens, with no per-request
+71: fee. At these limits, even conservatively counting each request byte as an input
+72: token leaves the run below $1 (roughly $0.66 before small protocol overhead).
+73: Observed runs cost well under a cent.
+74: Unavailable models, higher prices, network errors, exhausted limits or invalid
+75: graphs stop the run without automatic retries, JSON repair or fabricated tasks.
+76: A matched markdown fence around the answer is removed before parsing, which is an
+77: envelope, not repair: malformed JSON, prose around the JSON, a drifted objective and
+78: any invalid graph are still rejected. A run that fails after investigating anything
+79: writes `.tag/failed-run.json` with the transcript, the raw answer, the request count
+80: and the reported cost, and keeps the directory so the failure can be diagnosed.
+81: An output write failure can leave a partial `.tag` directory; inspect it before
+82: moving it aside.
+83: 
+84: The first dogfood run should use the objective above exactly once. Inspect its
+85: unedited graph for usefulness rather than rerunning until the answer looks good.
+86: 
+87: The complete dogfood experiment log — every run against this repository, what it
+88: showed, and what it ruled out — is in [`EXPERIMENTS.md`](EXPERIMENTS.md). It was
+89: split out of this file after it grew past the planner&#39;s whole-file read limit and a
+90: real run investigated a truncated README.
+91: 
+92: ---
+93: 
+94: Why this exists
+95: 
+96: Modern coding agents are remarkably capable when given a well-defined task.
+97: 
+98: The harder problem is deciding what should be done next.
+99: 
+100: Real projects are rarely a queue of perfectly specified independent tickets. An objective may require research before implementation. Research may reveal new work. Tasks may depend on other tasks. Some questions require humans. Some approaches fail. Priorities change as evidence accumulates.
+101: 
+102: &quot;tag-two&quot; explores a simple idea:
+103: 
+104: Represent that evolving understanding as a persistent graph, and let agents help investigate and evolve it.
+105: 
+106: The graph is not primarily a backlog.
+107: 
+108: It is the system&#39;s current model of the problem.
+109: 
+110: ---
+111: 
+112: The core idea
+113: 
+114: Start with an objective:
+115: 
+116: «Improve tag-two.»
+117: 
+118: An agent investigates the relevant repository and problem using its normal tools.
+119: 
+120: It then constructs a small graph representing useful next work:
+121: 
+122: Improve tag-two
+123: │
+124: ├── Understand current behaviour
+125: │
+126: ├── Investigate an important uncertainty
+127: │
+128: ├── Improve a demonstrated weakness
+129: │   └── depends on investigation
+130: │
+131: └── Demonstrate the improvement
+132: 
+133: The graph persists independently of any model conversation.
+134: 
+135: Later, a node can be investigated or worked on by another agent. Its result changes the graph.
+136: 
+137: Over time:
+138: 
+139: objective
+140:     ↓
+141: investigate
+142:     ↓
+143: graph
+144:     ↓
+145: choose useful work
+146:     ↓
+147: agent works
+148:     ↓
+149: observe result
+150:     ↓
+151: update graph
+152:     ↓
+153: repeat
+154: 
+155: Initially, humans may perform some of those transitions manually.
+156: 
+157: That is intentional.
+158: 
+159: The experiment is to gradually discover which parts are useful to automate rather than designing the complete autonomous system in advance.
+160: 
+161: ---
+162: 
+163: The hypothesis
+164: 
+165: A useful agent system does not necessarily need one enormous autonomous context.
+166: 
+167: Instead, it can maintain durable external state describing:
+168: 
+169: - what we are trying to achieve;
+170: - what we currently believe;
+171: - what has been discovered;
+172: - what remains uncertain;
+173: - what work is available;
+174: - what depends on what;
+175: - what has already happened;
+176: - where a human is required.
+177: 
+178: Agents can then operate on bounded pieces of that state.
+179: 
+180: This potentially allows different agents, models, tools and humans to collaborate without requiring a single continuous conversation.
+181: 
+182: The persistent graph is the continuity.
+183: 
+184: ---
+185: 
+186: The most important principle
+187: 
+188: The graph is the product.
+189: 
+190: Internal state is only useful if a human can understand it.
+191: 
+192: At every meaningful stage we should be able to inspect the graph and answer:
+193: 
+194: - What is the objective?
+195: - What does the system currently think needs doing?
+196: - Why?
+197: - What has it learned?
+198: - What is runnable now?
+199: - What is blocked?
+200: - What depends on something else?
+201: - Where is human input required?
+202: - What changed recently?
+203: 
+204: A JSON representation may be the durable format.
+205: 
+206: It must not be the primary human interface.
+207: 
+208: Even a crude HTML representation is preferable if it makes the system understandable at a glance.
+209: 
+210: ---
+211: 
+212: What a node represents
+213: 
+214: A node represents a meaningful part of the system&#39;s understanding of the problem.
+215: 
+216: A node may eventually represent things such as:
+217: 
+218: - work;
+219: - investigation;
+220: - a question;
+221: - evidence;
+222: - a decision;
+223: - an outcome.
+224: 
+225: Do not build an elaborate type system until the implementation needs one.
+226: 
+227: For the first version, a node can be extremely small.
+228: 
+229: For example:
+230: 
+231: {
+232:   &quot;id&quot;: &quot;research-current-behaviour&quot;,
+233:   &quot;title&quot;: &quot;Understand current planning behaviour&quot;,
+234:   &quot;reason&quot;: &quot;We need evidence about the current behaviour before changing it.&quot;,
+235:   &quot;dependsOn&quot;: []
+236: }
+237: 
+238: Add fields only when a demonstrated use case requires them.
+239: 
+240: ---
+241: 
+242: Research before decomposition
+243: 
+244: One of the strongest lessons from the original TAG experiment is that decomposition quality depends on research quality.
+245: 
+246: A model shown a handful of arbitrary source excerpts will tend to generate work related to those excerpts.
+247: 
+248: That is not necessarily the same as work important to the objective.
+249: 
+250: For example, an objective such as:
+251: 
+252: «Improve TAG»
+253: 
+254: previously produced locally plausible tasks involving protocol fields, validation edge cases and CLI parsing.
+255: 
+256: Those tasks were not necessarily wrong.
+257: 
+258: The problem was that the system had insufficient understanding to know whether they mattered.
+259: 
+260: Therefore:
+261: 
+262: Do not confuse code inspection with understanding the objective.
+263: 
+264: Before decomposing a broad objective, an agent should be able to investigate enough context to understand:
+265: 
+266: 1. what the project is trying to achieve;
+267: 2. what currently exists;
+268: 3. what currently works;
+269: 4. what has already been attempted;
+270: 5. what important uncertainties remain;
+271: 6. what would constitute meaningful progress.
+272: 
+273: The agent should use normal repository tools where possible:
+274: 
+275: - read files;
+276: - search;
+277: - inspect documentation;
+278: - inspect tests;
+279: - inspect relevant history;
+280: - run safe/read-only commands where appropriate.
+281: 
+282: Do not recreate a coding agent&#39;s repository exploration abilities by manually assembling arbitrary source excerpts unless there is a demonstrated reason to do so.
+283: 
+284: ---
+285: 
+286: Agents are capabilities, not the state
+287: 
+288: An agent may be:
+289: 
+290: - a hosted coding agent;
+291: - a model accessed through an API;
+292: - a local model;
+293: - a human;
+294: - another orchestration system.
+295: 
+296: The graph should not depend on the conversational memory of any particular agent.
+297: 
+298: A fresh agent should be able to understand the relevant work from durable project state plus whatever repository/environment access it is given.
+299: 
+300: This means:
+301: 
+302: «Worker handoffs may be stateless. Durable project understanding cannot be.»
+303: 
+304: The graph owns continuity.
+305: 
+306: Agents temporarily contribute reasoning or work.
+307: 
+308: ---
+309: 
+310: Human involvement is normal
+311: 
+312: Human intervention is not a failure mode.
+313: 
+314: Especially during bootstrap, a human may:
+315: 
+316: - choose which node to work next;
+317: - reject a poor decomposition;
+318: - answer a question;
+319: - approve a risky action;
+320: - select an agent or model;
+321: - inspect an outcome;
+322: - decide whether evidence is sufficient.
+323: 
+324: If an agent lacks a permission or capability, surface that boundary.
+325: 
+326: Do not silently invent workarounds merely to preserve the appearance of autonomy.
+327: 
+328: The goal is useful orchestration, not maximum autonomy.
+329: 
+330: ---
+331: 
+332: Bounded agent work
+333: 
+334: Agents should usually receive bounded work.
+335: 
+336: A useful pattern is:
+337: 
+338: inspect
+339: → perform one meaningful action
+340: → report what happened
+341: → update durable state
+342: → stop
+343: 
+344: Avoid agents implicitly continuing through an unlimited chain of work merely because more work is available.
+345: 
+346: This makes behaviour easier to understand, review and recover.
+347: 
+348: The appropriate boundaries should emerge through experimentation rather than being specified completely now.
+349: 
+350: ---
+351: 
+352: Model choice
+353: 
+354: Different graph nodes may eventually benefit from different models.
+355: 
+356: For example:
+357: 
+358: - decomposition may favour concise instruction-following;
+359: - difficult implementation may favour a strong coding model;
+360: - summarisation may use a cheap model;
+361: - research may require stronger reasoning or larger context.
+362: 
+363: Do not build model routing yet.
+364: 
+365: Start with one model/agent that works.
+366: 
+367: Model selection becomes part of the system only when there is evidence that it provides meaningful value.
+368: 
+369: One lesson from the original TAG experiment was that stronger reasoning is not automatically better for every operation.
+370: 
+371: A reasoning-heavy model repeatedly exhausted a structured planning output budget before producing valid JSON. Disabling reasoning for that bounded structured-planning call produced a valid graph using substantially fewer output tokens.
+372: 
+373: The broader lesson is:
+374: 
+375: Use model capability appropriate to the operation rather than simply maximising reasoning effort.
+376: 
+377: ---
+378: 
+379: Cost
+380: 
+381: Cost matters, particularly if graphs eventually create many agent calls.
+382: 
+383: But cost optimisation is not the first experiment.
+384: 
+385: First establish that the system produces useful work.
+386: 
+387: Then measure.
+388: 
+389: Then optimise.
+390: 
+391: Cheap and free models are interesting because sufficiently bounded graph nodes may allow smaller models to perform useful work.
+392: 
+393: That is a hypothesis worth testing later.
+394: 
+395: Do not compromise the initial demonstration merely to make it free.
+396: 
+397: ---
+398: 
+399: What we learned from the original TAG
+400: 
+401: An earlier implementation explored many of these ideas.
+402: 
+403: It included concepts such as:
+404: 
+405: - persistent graph state;
+406: - graph revisions;
+407: - generations;
+408: - structured graph mutations;
+409: - strict proposal validation;
+410: - controller/worker separation;
+411: - execution limits;
+412: - token and cost accounting;
+413: - model allowlists;
+414: - provider routing;
+415: - research-context construction;
+416: - worker packages;
+417: - acceptance gates;
+418: - persistent history;
+419: - HTML graph rendering.
+420: 
+421: Many of those ideas may eventually be useful.
+422: 
+423: They are not requirements for tag-two.
+424: 
+425: The original experiment taught us that it is easy to build sophisticated orchestration machinery before proving that the central loop is useful.
+426: 
+427: Several experiments became dominated by debugging the orchestration infrastructure itself:
+428: 
+429: - model availability;
+430: - provider routing;
+431: - reasoning-token behaviour;
+432: - output-token ceilings;
+433: - strict JSON proposal validation;
+434: - research-context selection;
+435: - controller-state transport;
+436: - protocol/status compatibility.
+437: 
+438: Meanwhile the question we actually cared about was much simpler:
+439: 
+440: «Can the system investigate an objective and produce a useful graph that we can see?»
+441: 
+442: &quot;tag-two&quot; starts again from that question.
+443: 
+444: ---
+445: 
+446: Things we deliberately do not know yet
+447: 
+448: We do not yet know the correct:
+449: 
+450: - graph schema;
+451: - node taxonomy;
+452: - scheduling algorithm;
+453: - mutation protocol;
+454: - execution protocol;
+455: - generation semantics;
+456: - agent transport;
+457: - model-routing policy;
+458: - retry policy;
+459: - prioritisation algorithm;
+460: - context-building strategy;
+461: - concurrency model;
+462: - cost-control system;
+463: - controller architecture;
+464: - long-term storage architecture.
+465: 
+466: These are research questions.
+467: 
+468: Do not turn them into architecture until actual usage provides evidence.
+469: 
+470: ---
+471: 
+472: What not to build yet
+473: 
+474: Unless required to make the current demonstration work, do not add:
+475: 
+476: - autonomous multi-generation execution;
+477: - controller/worker protocols;
+478: - generic mutation languages;
+479: - complex lifecycle state machines;
+480: - provider abstraction layers;
+481: - model allowlists;
+482: - model routing;
+483: - retries;
+484: - JSON repair;
+485: - elaborate cost reservation;
+486: - concurrency;
+487: - scheduling;
+488: - prioritisation engines;
+489: - background workers;
+490: - remote services;
+491: - authentication;
+492: - web applications;
+493: - plugin systems;
+494: - speculative extensibility.
+495: 
+496: A small amount of ugly glue is acceptable.
+497: 
+498: Premature infrastructure is not.
+499: 
+500: ---
+501: 
+502: Bootstrap rule
+503: 
+504: Every iteration should make the next useful iteration less manual.
+505: 
+506: That is the path toward self-hosting.
+507: 
+508: For example:
+509: 
+510: Iteration 0
+511: human → objective → agent → graph → human
+512: 
+513: Iteration 1
+514: human → graph node → agent → result → human updates graph
+515: 
+516: Iteration 2
+517: human → graph node → agent → result → system updates graph
+518: 
+519: Iteration 3
+520: system suggests next node → human approves → agent works
+521: 
+522: Iteration 4
+523: system handles bounded low-risk work itself
+524: 
+525: This sequence is illustrative, not a roadmap.
+526: 
+527: Do not implement later iterations until the previous behaviour exists and teaches us something.
+528: 
+529: ---
+530: 
+531: Self-hosting
+532: 
+533: &quot;tag-two&quot; should eventually help improve &quot;tag-two&quot;.
+534: 
+535: This is not merely a novelty.
+536: 
+537: Self-hosting provides a useful feedback loop because weaknesses in the orchestration system become real problems represented inside the system itself.
+538: 
+539: The desired pattern is:
+540: 
+541: tag-two identifies useful work
+542:         ↓
+543: one of those tasks improves tag-two
+544:         ↓
+545: the improved tag-two handles the next iteration
+546: 
+547: A useful guiding phrase is:
+548: 
+549: «The graph should eventually contain the work required to remove humans from the parts of the graph where they add no value.»
+550: 
+551: Humans should remain where judgement, preference, authority or approval genuinely matters.
+552: 
+553: ---
+554: 
+555: Relationship to larger systems
+556: 
+557: This experiment is deliberately tiny.
+558: 
+559: A larger orchestration system such as Harbour may eventually provide interfaces, task-provider integration, richer agent dispatch, chat interaction, prioritisation and operational views around concepts like these.
+560: 
+561: Do not design tag-two around Harbour.
+562: 
+563: If the primitive is genuinely useful, integration opportunities will become obvious later.
+564: 
+565: tag-two should remain understandable and runnable independently.
+566: 
+567: ---
+568: 
+569: Portability
+570: 
+571: The underlying idea should not depend on a particular coding-agent vendor.
+572: 
+573: A future graph node might be worked by:
+574: 
+575: - Claude Code;
+576: - Codex;
+577: - Copilot;
+578: - an OpenRouter model;
+579: - a local model;
+580: - Harbour;
+581: - a human.
+582: 
+583: Do not implement all of these.
+584: 
+585: But avoid making the graph itself synonymous with one provider&#39;s conversation format.
+586: 
+587: ---
+588: 
+589: The first implementation
+590: 
+591: The first version has one job:
+592: 
+593: objective + repository
+594:         ↓
+595: agent investigates repository
+596:         ↓
+597: small task graph
+598:         ↓
+599: graph.json
+600:         ↓
+601: graph.html
+602: 
+603: Then stop.
+604: 
+605: No graph tasks are executed.
+606: 
+607: The planner should produce a small graph — roughly a handful of nodes, not an exhaustive backlog.
+608: 
+609: Each proposed task should answer:
+610: 
+611: Why is this useful for the objective?
+612: 
+613: Dependencies should exist only when they carry real meaning.
+614: 
+615: The agent should investigate the repository itself rather than receiving a manually curated approximation of it.
+616: 
+617: ---
+618: 
+619: First dogfood objective
+620: 
+621: Once the minimum implementation exists, run it against its own repository with:
+622: 
+623: «Make tag-two better at achieving its purpose.»
+624: 
+625: This is the first meaningful experiment.
+626: 
+627: Do not manually design the answer.
+628: 
+629: Do not repeatedly rerun the planner until it produces something we like.
+630: 
+631: Generate a real graph and inspect what it actually thought.
+632: 
+633: The important question is:
+634: 
+635: «Would an experienced developer consider this decomposition useful?»
+636: 
+637: Not perfect.
+638: 
+639: Useful.
+640: 
+641: ---
+642: 
+643: First success criterion
+644: 
+645: We should be able to run something conceptually similar to:
+646: 
+647: tag plan &quot;Make tag-two better at achieving its purpose.&quot;
+648: 
+649: and receive:
+650: 
+651: .tag/
+652:   graph.json
+653:   graph.html
+654: 
+655: Opening &quot;graph.html&quot; should make the system&#39;s reasoning inspectable.
+656: 
+657: We should be able to see:
+658: 
+659: - the objective;
+660: - the proposed tasks;
+661: - why they matter;
+662: - dependencies;
+663: - enough evidence/context to understand why the agent proposed them.
+664: 
+665: The exact command and storage format are implementation details.
+666: 
+667: Choose the smallest thing that works.
+668: 
+669: ---
+670: 
+671: What happens after that
+672: 
+673: Nothing automatically.
+674: 
+675: We inspect the graph.
+676: 
+677: If it is poor, that is evidence.
+678: 
+679: We improve the part of tag-two responsible for the weakness.
+680: 
+681: If it is useful, we choose one node from the graph tag-two itself produced.
+682: 
+683: An agent works that node.
+684: 
+685: Then we determine the smallest mechanism necessary to feed the result back into the graph.
+686: 
+687: That becomes the next implementation step.
+688: 
+689: Not before.
+690: 
+691: ---
+692: 
+693: Development philosophy
+694: 
+695: Prefer:
+696: 
+697: - vanilla JavaScript;
+698: - small modules;
+699: - few dependencies;
+700: - files over services where practical;
+701: - explicit behaviour;
+702: - inspectable state;
+703: - simple commands;
+704: - boring data structures;
+705: - changes justified by observed needs.
+706: 
+707: Avoid cleverness whose value has not yet been demonstrated.
+708: 
+709: The project should remain small enough that one developer can understand the complete system.
+710: 
+711: ---
+712: 
+713: A test for every proposed feature
+714: 
+715: Before adding infrastructure, ask:
+716: 
+717: «What happened in a real tag-two run that makes us need this?»
+718: 
+719: If there is no concrete answer, don&#39;t build it yet.
+720: 
+721: ---
+722: 
+723: Current mission
+724: 
+725: Build the smallest seed capable of producing its first useful self-directed graph.
+726: 
+727: Then let that graph help determine what comes next.
+728: 
+729: Do not build the final system.
+730: 
+731: Build the thing that lets us run the next experiment.
+732: 
+733: 
+[Lines 1-733 of 733. End of README.md; the whole file from line 1 has been shown.]</pre></details>
+</details>
+</html>

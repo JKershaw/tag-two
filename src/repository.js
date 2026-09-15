@@ -35,7 +35,11 @@ function allowed(path) {
     && !path.startsWith('.github/agents/');
 }
 
-export async function repositoryTools(directory) {
+// The durable graph reaches the planner through its own channel, as recorded outcomes only. Left
+// listed as an ordinary tracked file it is supplied twice, and a real run read it and copied node
+// bodies and their citations out of it verbatim — the mirroring the outcomes-only supply avoided.
+export async function repositoryTools(directory, { exclude = [] } = {}) {
+  const hidden = new Set(exclude);
   const root = await realpath(directory);
   const git = async args => (await exec('git', [
     '--no-pager', '-c', 'core.fsmonitor=false', '-c', 'log.showSignature=false', '-C', root, ...args,
@@ -43,7 +47,8 @@ export async function repositoryTools(directory) {
   if ((await git(['rev-parse', '--show-toplevel'])).trim() !== root) {
     throw new Error('Choose the repository root directory.');
   }
-  const files = [...new Set((await git(['ls-files', '-z'])).split('\0').filter(path => path && allowed(path)))].sort();
+  const files = [...new Set((await git(['ls-files', '-z']))
+    .split('\0').filter(path => path && allowed(path) && !hidden.has(path)))].sort();
   const known = new Set(files);
   async function textFile(path) {
     if (!known.has(path)) throw new Error('Choose a listed tracked file.');
