@@ -1,7 +1,14 @@
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 
+// Two consecutive paid runs returned a valid graph that was thrown away because the model
+// echoed the objective without its final full stop. An exact string match is a poor drift
+// detector: blind to a graph that has genuinely wandered, and fatal to a punctuation mark.
+// Surrounding whitespace and trailing sentence punctuation are ignored; nothing else is.
+const sameObjective = (echoed, objective) => nonempty(echoed) && nonempty(objective)
+  && echoed.trim().replace(/[.!?\s]+$/, '') === objective.trim().replace(/[.!?\s]+$/, '');
+
 export function validateGraph(graph, objective) {
-  if (!graph || graph.objective !== objective || !nonempty(graph.summary)
+  if (!graph || !sameObjective(graph.objective, objective) || !nonempty(graph.summary)
     || !Array.isArray(graph.nodes) || graph.nodes.length < 1 || graph.nodes.length > 8) {
     throw new Error('Expected the original objective, a research summary, and 1–8 nodes.');
   }
@@ -32,6 +39,8 @@ export function validateGraph(graph, objective) {
     visited.add(id);
   }
   for (const id of nodes.keys()) visit(id);
+  // The asked objective is authoritative; the echo only had to agree with it.
+  graph.objective = objective;
   return graph;
 }
 

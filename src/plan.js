@@ -1,4 +1,4 @@
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { repositoryTools, tools } from './repository.js';
 import { validateGraph, renderGraph } from './graph.js';
@@ -28,6 +28,10 @@ where a document and the code disagree, the code is what exists. Propose work wh
 confirmed in code, not the topics your context discusses most.
 Call history to see what has actually changed recently, and search to check a specific claim, before
 treating any document's description of an open problem as current.
+If a durable graph is supplied below the objective, it is this system's own record of the problem.
+Its recorded outcomes describe work that was actually performed and what was observed; treat them as
+established results and do not propose work an outcome reports as already done or already refuted.
+Nodes carrying no outcome are still open. You may keep, drop, reword or replace any node.
 Return ONLY a JSON object (no markdown fences) with:
 {"objective":"the exact user objective","summary":"what you learned, what works or is unverified,
 prior attempts and remaining uncertainties","nodes":[{"id":"short-slug","title":"task title",
@@ -46,12 +50,31 @@ async function request(path, options, fetchImpl) {
   return response.json();
 }
 
+// A recorded outcome that the planner never reads changes nothing: run 9 proposed the very node
+// whose outcome said it had just been worked, because it never opened the graph. Instructions do
+// not reliably produce a tool call, so the durable state is supplied rather than offered.
+async function priorGraph(path) {
+  let text;
+  try {
+    text = await readFile(path, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw new Error(`Could not read the durable graph at ${path}: ${error.message}`);
+  }
+  const graph = JSON.parse(text);
+  validateGraph(graph, graph?.objective);
+  const { run, ...rest } = graph;
+  return rest;
+}
+
 export async function plan(objective, directory, {
   apiKey = process.env.OPENROUTER_API_KEY,
   fetchImpl = fetch,
+  graphPath = join(directory, 'graph', 'graph.json'),
 } = {}) {
   if (typeof objective !== 'string' || !objective.trim()) throw new Error('An objective is required.');
   if (!apiKey) throw new Error('Set OPENROUTER_API_KEY before planning.');
+  const prior = await priorGraph(graphPath);
   const investigate = await repositoryTools(directory);
   const output = join(directory, '.tag');
   try {
@@ -77,8 +100,11 @@ export async function plan(objective, directory, {
     }
     const messages = [
       { role: 'system', content: instructions },
-      { role: 'user', content: objective },
+      { role: 'user', content: prior
+        ? `${objective}\n\nThe durable graph for this objective, including outcomes recorded by a human after work was performed:\n${JSON.stringify(prior, null, 2)}`
+        : objective },
     ];
+    attempt.priorGraph = prior ? graphPath : null;
     const investigation = attempt.investigation;
     for (let turn = 1; turn <= MAX_REQUESTS; turn++) {
       attempt.requests = turn;
@@ -136,7 +162,7 @@ export async function plan(objective, directory, {
       } catch (error) {
         throw new Error(`Invalid planner graph: ${error.message}. No repair or retry was made.`);
       }
-      graph.run = { model: MODEL, createdAt: attempt.createdAt, requests: turn, costUsd: attempt.costUsd, investigation };
+      graph.run = { model: MODEL, createdAt: attempt.createdAt, requests: turn, costUsd: attempt.costUsd, priorGraph: attempt.priorGraph, investigation };
       const html = renderGraph(graph);
       keep = true;
       await writeFile(join(output, 'graph.json'), JSON.stringify(graph, null, 2) + '\n', { flag: 'wx', mode: 0o600 });

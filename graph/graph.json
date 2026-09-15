@@ -7,8 +7,8 @@
       "title": "Enhance research quality to avoid mirroring",
       "reason": "The planner currently mirrors the most discussed topics in its context without verifying whether the proposed work already exists or addresses a real gap. Improving research quality will lead to more meaningful task proposals.",
       "evidence": [
-        "README.md:156-160 \u2014 The agent proposed improving research depth in the same request it declined to read the rest of the README.",
-        "src/repository.js:78-95 \u2014 Implementation of whole-file reads to avoid partial research."
+        "README.md:156-160 — The agent proposed improving research depth in the same request it declined to read the rest of the README.",
+        "src/repository.js:78-95 — Implementation of whole-file reads to avoid partial research."
       ],
       "dependsOn": []
     },
@@ -17,8 +17,8 @@
       "title": "Verify gaps before proposing tasks",
       "reason": "The planner should cross-check proposed tasks against the repository to ensure they address actual gaps rather than restating existing work.",
       "evidence": [
-        "README.md:259-265 \u2014 The agent cited the finished implementation of whole-file reads as the reason to do the work, demonstrating the need for verification.",
-        "test/tag.test.js:106-119 \u2014 Tests confirm the repository tools enforce complete file reads."
+        "README.md:259-265 — The agent cited the finished implementation of whole-file reads as the reason to do the work, demonstrating the need for verification.",
+        "test/tag.test.js:106-119 — Tests confirm the repository tools enforce complete file reads."
       ],
       "dependsOn": [
         "improve-research"
@@ -29,8 +29,8 @@
       "title": "Expand tool usage beyond file reading",
       "reason": "The planner has never used `search` or `history` tools, limiting its ability to gather diverse evidence. Expanding tool usage could improve research depth.",
       "evidence": [
-        "README.md:269-271 \u2014 The agent has never used `search` or `history` in any run.",
-        "src/repository.js:96-117 \u2014 Implementation of search and history tools."
+        "README.md:269-271 — The agent has never used `search` or `history` in any run.",
+        "src/repository.js:96-117 — Implementation of search and history tools."
       ],
       "dependsOn": [
         "improve-research"
@@ -39,6 +39,10 @@
         {
           "at": "2026-09-15T17:25:32.463Z",
           "outcome": "Worked 2026-09-15 (eighth dogfood run). One sentence was added to the planner's system instructions naming history and search and giving a reason to call them: 'Call history to see what has actually changed recently, and search to check a specific claim, before treating any document's description of an open problem as current.' The run that followed made six tool calls, all list_files or read_file; neither search nor history was called once. REFUTED: a system-instruction directive does not cause this model to make a tool call it was not already going to make, which matches run 2's result for a directive inside a tool result. Evidence: examples/eighth-dogfood/failed-run.json. Do not reopen this node by instruction; if the planner is to see history the system must supply it, and no run yet shows that seeing history would improve decomposition."
+        },
+        {
+          "at": "2026-09-15T17:28:03.193Z",
+          "outcome": "CORRECTION 2026-09-15 (ninth dogfood run). The refutation recorded above was drawn from a single run and is wrong as stated. With the identical instruction still in place, run 9 called history for the first time in nine runs. So a system-instruction directive CAN produce a tool call from this model; it just does not do so reliably, and one run is not enough to refute a behavioural hypothesis. Evidence: examples/ninth-dogfood/failed-run.json, investigation entry 7. What run 9 also showed is more useful: it never opened graph/graph.json, so the outcome recorded on this node had no effect on its planning, and it proposed this very node again. Recording an outcome is not the same as consulting one."
         }
       ]
     },
@@ -47,8 +51,8 @@
       "title": "Clarify the research summary in the graph",
       "reason": "The research summary should clearly distinguish between inspected and verified behavior to avoid misleading task proposals.",
       "evidence": [
-        "README.md:204-211 \u2014 The summary does not clearly distinguish inspected tests from verified runtime behavior.",
-        "src/graph.js:55-56 \u2014 HTML rendering of the research summary."
+        "README.md:204-211 — The summary does not clearly distinguish inspected tests from verified runtime behavior.",
+        "src/graph.js:55-56 — HTML rendering of the research summary."
       ],
       "dependsOn": [
         "verify-gaps"

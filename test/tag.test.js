@@ -357,3 +357,57 @@ test('validation accepts recorded outcomes and rejects malformed ones', () => {
     assert.throws(() => validateGraph(broken, objective), /outcomes/);
   }
 });
+
+test('an objective echoed without its trailing full stop is accepted, a different one is not', () => {
+  // Two consecutive real runs lost a valid graph to a missing '.'.
+  const drifted = { ...graph(), objective: `${objective}.` };
+  assert.equal(validateGraph(drifted, objective).objective, objective, 'the asked objective wins');
+  assert.equal(validateGraph({ ...graph(), objective: `  ${objective}  ` }, objective).objective, objective);
+  assert.throws(() => validateGraph({ ...graph(), objective: 'Improve something else' }, objective), /original objective/);
+  assert.throws(() => validateGraph({ ...graph(), objective: 'Improve the' }, objective), /original objective/);
+  assert.throws(() => validateGraph({ ...graph(), objective: '' }, objective), /original objective/);
+});
+
+test('the planner is handed a durable graph with its recorded outcomes when the repository tracks one', async t => {
+  const directory = await fixture(t);
+  await mkdir(join(directory, 'graph'));
+  const durable = planned();
+  durable.nodes[0].outcomes = [{ at: '2026-09-16T00:00:00.000Z', outcome: 'Worked and refuted.' }];
+  await writeFile(join(directory, 'graph', 'graph.json'), JSON.stringify(durable, null, 2) + '\n');
+
+  let prompt;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    if (calls === 2) return toolAnswer();
+    prompt = JSON.parse(options.body).messages[1].content;
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  assert.match(prompt, /^Improve the project\n\nThe durable graph for this objective/);
+  assert.match(prompt, /Worked and refuted\./, 'recorded outcomes reach the model');
+  assert.doesNotMatch(prompt, /"investigation"/, 'the transcript is not resent');
+  const written = JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8'));
+  assert.equal(written.run.priorGraph, join(directory, 'graph', 'graph.json'));
+});
+
+test('a repository with no durable graph is planned exactly as before, and a corrupt one stops the run', async t => {
+  const directory = await fixture(t);
+  let prompt;
+  let calls = 0;
+  const fetchImpl = async (url, options) => {
+    if (++calls === 1) return catalog();
+    if (calls === 2) return toolAnswer();
+    prompt = JSON.parse(options.body).messages[1].content;
+    return answer(JSON.stringify(graph()));
+  };
+  await plan(objective, directory, { apiKey: 'test-only', fetchImpl });
+  assert.equal(prompt, objective);
+  assert.equal(JSON.parse(await readFile(join(directory, '.tag', 'graph.json'), 'utf8')).run.priorGraph, null);
+
+  const broken = await fixture(t);
+  await mkdir(join(broken, 'graph'));
+  await writeFile(join(broken, 'graph', 'graph.json'), '{"objective":"x"}');
+  await assert.rejects(plan(objective, broken, { apiKey: 'test-only', fetchImpl }), /research summary/);
+  await assert.rejects(readFile(join(broken, '.tag', 'graph.json')), { code: 'ENOENT' });
+});
