@@ -10,6 +10,11 @@ truncated purpose statement and no source at all. See the twelfth run below.
 `README.md` states what the project is for. This file states what actually
 happened. Where they disagree, the runs are what happened.
 
+It moved from the repository root to `docs/experiments.md` at 0.1.0, along with
+`notes/`, which is now `docs/notes/`. Paths written in prose below are as they
+were at the commit being described; markdown links have been repointed so they
+still resolve from here. Nothing else in this file was edited in the move.
+
 ---
 
 **First attempt (2026-09-15):** the command above stopped at the model-catalog
@@ -23,8 +28,8 @@ read the first 200 lines of the README, all three implementation modules, and
 the test file. It did not paginate the README, inspect history, or run tests.
 
 The unedited outputs are preserved in
-[`examples/first-dogfood/graph.json`](examples/first-dogfood/graph.json) and
-[`examples/first-dogfood/graph.html`](examples/first-dogfood/graph.html).
+[`examples/first-dogfood/graph.json`](../examples/first-dogfood/graph.json) and
+[`examples/first-dogfood/graph.html`](../examples/first-dogfood/graph.html).
 Download/open the HTML locally to inspect it. These are explicitly archived
 experiment artifacts, including the original repository investigation transcript;
 normal `.tag` output remains ignored.
@@ -71,8 +76,8 @@ because the previous attempt produced no graph to assess. DeepSeek V3 0324 made 
 requests at a reported total cost of **$0.004499**, reading `package.json` and all
 four implementation and test files, plus the first 200 lines of the README. The
 unedited outputs are preserved in
-[`examples/second-dogfood/graph.json`](examples/second-dogfood/graph.json) and
-[`examples/second-dogfood/graph.html`](examples/second-dogfood/graph.html).
+[`examples/second-dogfood/graph.json`](../examples/second-dogfood/graph.json) and
+[`examples/second-dogfood/graph.html`](../examples/second-dogfood/graph.html).
 
 The graph proposed five tasks:
 
@@ -128,7 +133,7 @@ planner achieved complete research for the first time — all 809 README lines a
 every implementation and test file, each confirmed complete in the transcript. It
 then returned its graph wrapped in ` ```json ` fences and the planner discarded it.
 The preserved record in
-[`examples/third-dogfood/failed-run.json`](examples/third-dogfood/failed-run.json)
+[`examples/third-dogfood/failed-run.json`](../examples/third-dogfood/failed-run.json)
 shows the content inside the fence parses and passes `validateGraph` unchanged: three
 backticks were the only thing between the run and a four-node graph. The planner now
 removes a matched fence before parsing.
@@ -140,8 +145,8 @@ change had worked before any graph existed to show it.
 **Fourth dogfood run (2026-09-15):** the same objective, run once more, produced a
 graph at a reported cost of **$0.006458** — complete research costs roughly 60% more
 than the first run's partial reading, and still under a cent. The unedited outputs
-are in [`examples/fourth-dogfood/graph.json`](examples/fourth-dogfood/graph.json)
-and [`examples/fourth-dogfood/graph.html`](examples/fourth-dogfood/graph.html).
+are in [`examples/fourth-dogfood/graph.json`](../examples/fourth-dogfood/graph.json)
+and [`examples/fourth-dogfood/graph.html`](../examples/fourth-dogfood/graph.html).
 
 The graph proposed five tasks:
 
@@ -191,8 +196,8 @@ unedited, including the two failures.
 **Fifth dogfood run (2026-09-15):** a controlled repeat. No source file changed
 between the fourth run and this one — only this README, which was corrected so that
 it no longer described complete research as an open problem. The unedited outputs are
-in [`examples/fifth-dogfood/graph.json`](examples/fifth-dogfood/graph.json) and
-[`examples/fifth-dogfood/graph.html`](examples/fifth-dogfood/graph.html), at a
+in [`examples/fifth-dogfood/graph.json`](../examples/fifth-dogfood/graph.json) and
+[`examples/fifth-dogfood/graph.html`](../examples/fifth-dogfood/graph.html), at a
 reported cost of **$0.006593**.
 
 **Assessment: the stale-documentation explanation is refuted, and the result is worse
@@ -233,7 +238,7 @@ rather than by argument.
 **Sixth dogfood run (2026-09-15, no graph):** the run testing the new instruction read
 every file and then failed at the request-byte guard before sending. The preserved
 record in
-[`examples/sixth-dogfood/failed-run.json`](examples/sixth-dogfood/failed-run.json)
+[`examples/sixth-dogfood/failed-run.json`](../examples/sixth-dogfood/failed-run.json)
 shows this repository's own experiment log had reached 38,322 of 78,755 serialized
 tool bytes — 49% of the research payload — after growing from 696 to 921 README lines
 across six experiments.
@@ -249,8 +254,8 @@ choose to read is an untested assumption.
 
 **Seventh dogfood run (2026-09-15):** the same objective at a reported cost of
 **$0.006827**, archived unedited in
-[`examples/seventh-dogfood/graph.json`](examples/seventh-dogfood/graph.json) and
-[`examples/seventh-dogfood/graph.html`](examples/seventh-dogfood/graph.html).
+[`examples/seventh-dogfood/graph.json`](../examples/seventh-dogfood/graph.json) and
+[`examples/seventh-dogfood/graph.html`](../examples/seventh-dogfood/graph.html).
 
 The graph proposed four tasks:
 
@@ -291,7 +296,7 @@ was worked directly: the planner's system instructions gained one sentence telli
 to call `history` to see what had recently changed and `search` to check a claim,
 before treating a document's description of an open problem as current. The preserved
 record is
-[`examples/eighth-dogfood/failed-run.json`](examples/eighth-dogfood/failed-run.json),
+[`examples/eighth-dogfood/failed-run.json`](../examples/eighth-dogfood/failed-run.json),
 at a reported cost of **$0.00699275**.
 
 **Assessment: the hypothesis is refuted, and the run also failed on a punctuation
@@ -334,7 +339,7 @@ the seventh run's graph, unedited except by `tag record`, promoted out of the ig
 `.tag` directory so that tag-two's own understanding of its own problem is durable and
 inspectable. `tag record <graph> <node> "<outcome>"` appends a timestamped outcome to
 one node, revalidates the graph and re-renders
-[`graph/graph.html`](graph/graph.html). It does not decide anything, schedule
+[`graph/graph.html`](../graph/graph.html). It does not decide anything, schedule
 anything or execute anything; a human still chooses the node and does the work. The
 first thing recorded through it was the refutation above, against the very node that
 caused it.
@@ -352,7 +357,7 @@ planner investigates a repository that contains a graph with a refuted node in i
 
 **Ninth dogfood run (2026-09-15, no graph):** the first run against a repository that
 tracked its own durable graph, preserved in
-[`examples/ninth-dogfood/failed-run.json`](examples/ninth-dogfood/failed-run.json) at
+[`examples/ninth-dogfood/failed-run.json`](../examples/ninth-dogfood/failed-run.json) at
 a reported cost of **$0.00582425**.
 
 Three results, one of which overturned a conclusion recorded an hour earlier.
@@ -385,7 +390,7 @@ tool meant to keep it. The assignment moved above every check that can reject.
 
 **Eleventh dogfood run (2026-09-15, no graph):** the same configuration, re-run so the
 answer could be seen. Preserved in
-[`examples/eleventh-dogfood/failed-run.json`](examples/eleventh-dogfood/failed-run.json)
+[`examples/eleventh-dogfood/failed-run.json`](../examples/eleventh-dogfood/failed-run.json)
 at **$0.00125275** — a fifth of a normal run, because it did no work.
 
 **Assessment: the durable graph was demonstrably causal, and it replaced research
@@ -416,8 +421,8 @@ standing in for it.
 
 **Twelfth dogfood run (2026-09-15):** the first graph produced since the durable graph
 existed, archived in
-[`examples/twelfth-dogfood/graph.json`](examples/twelfth-dogfood/graph.json) and
-[`examples/twelfth-dogfood/graph.html`](examples/twelfth-dogfood/graph.html) at
+[`examples/twelfth-dogfood/graph.json`](../examples/twelfth-dogfood/graph.json) and
+[`examples/twelfth-dogfood/graph.html`](../examples/twelfth-dogfood/graph.html) at
 **$0.00385476**.
 
 **Assessment: research collapsed, the causal benefit did not reproduce, and the run is
@@ -449,7 +454,7 @@ graph, a README that fits in one read.
 
 **Thirteenth dogfood run (2026-09-15):** identical to the twelfth except that the
 README now fits in one read. Archived in
-[`examples/thirteenth-dogfood/graph.json`](examples/thirteenth-dogfood/graph.json) at
+[`examples/thirteenth-dogfood/graph.json`](../examples/thirteenth-dogfood/graph.json) at
 **$0.00301446**.
 
 **Assessment: the confound is eliminated and the durable graph is the cause.** With a
@@ -471,7 +476,7 @@ effect. So only the outcomes are supplied now — title, timestamp, and what was
 
 **Fourteenth dogfood run (2026-09-15):** the first run given recorded outcomes alone,
 archived in
-[`examples/fourteenth-dogfood/graph.json`](examples/fourteenth-dogfood/graph.json) at
+[`examples/fourteenth-dogfood/graph.json`](../examples/fourteenth-dogfood/graph.json) at
 **$0.0061095**.
 
 **Assessment: research recovered and the durable record visibly did work.** Five
@@ -506,7 +511,7 @@ Adopting whole first put the durable graph at 44 KB — past the planner's own
 fix. The transcript now stays with the archived run and is referenced by path.
 
 **Fifteenth dogfood run (2026-09-15):** the first run under `tag observe`, archived in
-[`examples/fifteenth-dogfood/graph.json`](examples/fifteenth-dogfood/graph.json) at
+[`examples/fifteenth-dogfood/graph.json`](../examples/fifteenth-dogfood/graph.json) at
 **$0.00312324**.
 
 **Assessment: the worst citations yet.** One file read, no other tool called, and seven
@@ -548,7 +553,7 @@ created that, because tag-two's state lives in the repository tag-two investigat
 durable graph and its rendering are now hidden from `list_files` and `read_file`.
 
 **Nineteenth dogfood run (2026-09-15):** archived in
-[`examples/nineteenth-dogfood/graph.json`](examples/nineteenth-dogfood/graph.json) at
+[`examples/nineteenth-dogfood/graph.json`](../examples/nineteenth-dogfood/graph.json) at
 **$0.00790675**. **The first graph since durable state was introduced whose every
 citation names a file the run actually read**: 0 invented of 6, four files read. The
 sequence across the cycle is 7 of 10, 3, 3, 0.
@@ -558,7 +563,7 @@ reasons or mirrors. The outcome recorded for the previous cycle was written to b
 factual and to propose nothing, because the outcome that preceded run 15 had ended with
 *"Not yet tried: rejecting or flagging a graph whose evidence cites unread files"* — and
 run 15 had duly proposed exactly that. Archived in
-[`examples/twentieth-dogfood/graph.json`](examples/twentieth-dogfood/graph.json) at
+[`examples/twentieth-dogfood/graph.json`](../examples/twentieth-dogfood/graph.json) at
 **$0.007977**.
 
 **Assessment: given nothing to copy, it proposed work that already existed.** Citations
@@ -581,7 +586,7 @@ planned against, with no experiment log, no durable graph, no `tag observe`, and
 human analysis of any run anywhere in its input.
 
 **Control A, broad objective** (the standing one), archived in
-[`examples/control-seed-broad/graph.json`](examples/control-seed-broad/graph.json) at
+[`examples/control-seed-broad/graph.json`](../examples/control-seed-broad/graph.json) at
 **$0.00510025**. All six files read whole, every citation naming a file it read.
 
 | First run, same repository | Control A, twenty runs later |
@@ -608,7 +613,7 @@ the context and the appearance together.
 
 **Control B, bounded objective** — *"Reduce the chance that a planning run produces no
 usable output."* — archived in
-[`examples/control-seed-bounded/graph.json`](examples/control-seed-bounded/graph.json)
+[`examples/control-seed-bounded/graph.json`](../examples/control-seed-bounded/graph.json)
 at **$0.004031**.
 
 Three nodes, not five, and none of them a per-module review. `improve-error-handling`
@@ -681,7 +686,7 @@ one.**
 
 Twenty runs, one variable at a time, $0.11857 in total. The design was written down
 before any run was made and is archived unedited at
-[`examples/bounded-objective-trial/PREREG.md`](examples/bounded-objective-trial/PREREG.md);
+[`examples/bounded-objective-trial/PREREG.md`](../examples/bounded-objective-trial/PREREG.md);
 every run, accepted or rejected, is archived beside it under its arm label. No source
 file was changed at any point in the trial.
 
@@ -879,7 +884,7 @@ steward driving this project has in fact worked that way.
 
 This trial tests that, against tag-two's own history, before anything is built. The
 design was written down before any run and is archived unedited at
-[`examples/epistemic-control-trial/PREREG.md`](examples/epistemic-control-trial/PREREG.md),
+[`examples/epistemic-control-trial/PREREG.md`](../examples/epistemic-control-trial/PREREG.md),
 with the per-cell judgements and their supporting quotations in `SCORES.md`, the
 mechanical measures in `mechanical.txt`, and every run — including the ones that
 produced nothing — beside them under its decision point.
@@ -1383,3 +1388,39 @@ human-directed loop a recorded intent was preserved, never violated, and left no
   reports what was added, not what was offered.
 - **One question is one observation.** That tag-two asked at the right moment once does not show it
   would not ask at the wrong moment, or fail to ask at another right one.
+
+---
+
+## The Harbour runner trial (two task episodes, no planner runs)
+
+These two episodes were run against a *different* repository, so they are not dogfood runs and are
+not written up in the sequence above. They are the last evidence gathered before 0.1.0, and the
+reason the task runner rather than the planner is the released interface. The full account is in
+[`docs/notes/steward-log.md`](notes/steward-log.md); the durable state is in
+[`tasks/lin-1856.json`](../tasks/lin-1856.json) and [`tasks/lin-2562.json`](../tasks/lin-2562.json),
+and the harness that drove them — instrumentation, deliberately not a capability tag-two has — is
+[`examples/harbour-runner/runner.mjs`](../examples/harbour-runner/runner.mjs).
+
+Two real tickets were selected from their titles, opened as tag-two episodes, and then carried by
+repeated stateless model decisions given nothing but `tag task show` and a shell in an isolated
+clone. Across the two, the steward chose **none** of the operations — the first time in the project.
+Both reached verified completion: 31 recorded operations, 10 of them commands run by `tag verify`,
+3 of which failed and stayed in the record.
+
+What the runner did unprompted: investigated before acting every time; discovered that the ticket's
+line numbers had drifted and recovered; reproduced a ticket's own premise by mutation before
+trusting it; caught its own mutation as unfaithful after reading the route's guard; noticed that
+running two test files in one command proves only that one of them failed, and re-ran them
+separately; and read a whole-suite failure as pre-existing by comparing it against a recorded
+baseline.
+
+What it got wrong, preserved rather than rescued: it fabricated once, reading an empty stdout as
+"the array is empty" — the harness had omitted the empty-stdout line, so nothing in state
+contradicted it. It re-proposed a command whose syntax error was two operations above it. It re-ran
+passing verifications four times. It escalated to the human once with no question attached. And
+neither episode ever reached its reserved decisions: both completion conditions were satisfiable
+without them.
+
+Two source changes came out of it, each named after the failure that earned it: multi-line questions
+and results are now indented under their labels in `showTask`, and a refused close is recorded as an
+operation. Both are in [`DESIGN.md`](../DESIGN.md).

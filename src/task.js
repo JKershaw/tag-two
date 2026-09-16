@@ -1,3 +1,4 @@
+// The 0.1 public interface: one authorised task, held in durable state. See DESIGN.md.
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';

@@ -6,12 +6,83 @@ import { adopt } from '../src/adopt.js';
 import { check, report } from '../src/check.js';
 import { observe, describe } from '../src/observe.js';
 import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask, answerTask } from '../src/task.js';
-import { resolve } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const usage = 'Usage: tag plan "objective" [repository]\n       tag record <graph.json> <node-id> "what happened"\n       tag input <graph.json> <from> <kind> "what was said"\n       tag adopt <new-graph.json> <durable-graph.json>\n       tag check <proposed-graph.json> <durable-graph.json>\n       tag observe <graph.json|failed-run.json>\n       tag task open <task.json> <id> "statement" "verified completion means…" ["reserved decision"…]\n       tag task intent <task.json> <from> <kind> "what was said"\n       tag task op <task.json> <by> <operation> "bounded question" "what it reported" ["evidence"…]\n       tag task verify <task.json> "command"\n       tag task ask <task.json> <evidence operation numbers> "decision required" "why a machine cannot settle it" "what continues after the answer" "option"…\n       tag task answer <task.json> <from> "what the human said"\n       tag task close <task.json> "how the cited evidence establishes completion" <operation number>…\n       tag task show <task.json>';
+// One version number, read from the package rather than written out a second time here.
+const { version } = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8'));
+
+// The task runner is the interface this release is about, so it is listed first and in full; the
+// planning and graph commands are the research line it grew out of and are labelled as such. The
+// exit statuses are part of the interface too: 2 means a human is being asked something, which is
+// a different outcome from failure and has to be distinguishable by whatever ran the command.
+const taskUsage = [
+  'Usage: tag task open   <task.json> <id> "statement" "verified completion means\u2026" ["reserved decision"\u2026]',
+  '       tag task intent <task.json> <from> <kind> "what was said"',
+  '       tag task op     <task.json> <by> <operation> "bounded question" "what it reported" ["evidence"\u2026]',
+  '       tag task verify <task.json> "command"',
+  '       tag task ask    <task.json> <evidence operation numbers> "decision required" "why a machine cannot settle it" "what continues after the answer" "option"\u2026',
+  '       tag task answer <task.json> <from> "what the human said"',
+  '       tag task close  <task.json> "how the cited evidence establishes completion" <operation number>\u2026',
+  '       tag task show   <task.json>',
+].join('\n');
+const graphUsage = [
+  'Experimental (the planning and graph research line; see docs/experiments.md):',
+  '       tag plan "objective" [repository]',
+  '       tag record <graph.json> <node-id> "what happened"',
+  '       tag input <graph.json> <from> <kind> "what was said"',
+  '       tag adopt <new-graph.json> <durable-graph.json>',
+  '       tag check <proposed-graph.json> <durable-graph.json>',
+  '       tag observe <graph.json|failed-run.json>',
+].join('\n');
+const usage = `${taskUsage}\n\n${graphUsage}\n\ntag --help for what each one does \u00b7 tag --version`;
+const help = [
+  taskUsage,
+  '',
+  'tag task holds one authorised task episode: what was asked, what would count as verified',
+  'completion, which decisions stay with the human, what was said from outside, and every bounded',
+  'operation somebody performed. It proposes no work, ranks nothing, schedules nothing, calls no',
+  'model, and chooses no operation.',
+  '',
+  '  open    records the task as supplied. It refuses to overwrite an existing task file.',
+  '  intent  keeps a constraint, hypothesis or observation in the words it arrived in.',
+  '  op      records an operation somebody performed. One with no evidence is shown as a claim.',
+  '  verify  runs the command and records the exit status the machine returned. Only a verification',
+  '          establishes anything, and only a verification may be cited by a close.',
+  '  ask     returns control to a human, recording the decision, why a machine cannot settle it,',
+  '          the evidence it rests on, at least two real options, and what continues after the answer.',
+  '  answer  keeps the human\u2019s reply on the question it answers, without interpreting it.',
+  '  close   completes the task, citing verifications that really ran and really exited 0. A close',
+  '          that cites nothing, cites an operation that ran nothing, or cites a failing one is',
+  '          refused \u2014 and the refusal is recorded as an operation, so the next reader sees it.',
+  '  show    prints the whole episode in text. This is what a fresh agent or a human is handed.',
+  '',
+  'Exit status: 0 succeeded \u00b7 1 failed, including a verification whose command failed \u00b7 2 control',
+  'was returned to a human by tag task ask.',
+  '',
+  graphUsage,
+  '',
+  'plan requires OPENROUTER_API_KEY, writes .tag/graph.json and .tag/graph.html, then stops.',
+  'record appends an outcome to one node of an existing graph and re-renders its HTML.',
+  'input appends something said from outside the graph \u2014 a human or agent objective, observation,',
+  'belief, question, priority or constraint \u2014 in the words it arrived in, attached to no node.',
+  'adopt replaces a durable graph with a newer one for the same objective, carrying every recorded',
+  'outcome and input across.',
+  'check asks, in one bounded model request, which of a graph\u2019s proposed tasks the recorded outcomes',
+  'already report as done or refuted, and verifies every quote against those outcomes.',
+  'observe reports what a run actually did, without calling a model.',
+  '',
+  'These six are research, kept because they are the evidence the task runner was derived from.',
+  'Eighty-eight recorded runs and five task episodes are in docs/experiments.md and',
+  'docs/notes/steward-log.md.',
+].join('\n');
+
 const [command, ...rest] = process.argv.slice(2);
 if (command === '--help' || command === '-h') {
-  console.log(`${usage}\nplan requires OPENROUTER_API_KEY, writes .tag/graph.json and .tag/graph.html, then stops.\nrecord appends an outcome to one node of an existing graph and re-renders its HTML.\ninput appends something said from outside the graph — a human or agent objective, observation, belief, question, priority or constraint — in the words it arrived in, attached to no node.\nadopt replaces a durable graph with a newer one for the same objective, carrying every recorded outcome across.\ncheck asks, in one bounded model request, which of a graph's proposed tasks the recorded outcomes already report as done or refuted, and verifies every quote against those outcomes.\nobserve reports what a run actually did, without calling a model.`);
+  console.log(help);
+} else if (command === '--version' || command === '-v') {
+  console.log(version);
 } else if (command === 'plan') {
   const [objective, repository = process.cwd(), ...extra] = rest;
   if (!objective?.trim() || extra.length) {
