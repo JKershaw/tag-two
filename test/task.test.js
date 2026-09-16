@@ -75,26 +75,30 @@ test('a command that could not be started records nothing at all', async t => {
 
 test('a close must cite evidence, and the citation is looked up rather than trusted', async t => {
   const path = await fixture(t);
+  // Each refusal below is itself recorded as an operation, so the citations walk forward: a close
+  // that was refused is a thing that happened to this task, and the numbering says so.
   await assert.rejects(closeTask(path, 'done', []), /a close with no evidence is a claim/);
-  await assert.rejects(closeTask(path, 'done', ['1']), /does not exist/);
+  await assert.rejects(closeTask(path, 'done', ['9']), /does not exist/);
+  assert.deepEqual((await readTask(path)).operations.map(item => item.operation), ['refused close', 'refused close']);
 
   const task = await readTask(path);
-  task.operations = [{ at: '2026-01-01T00:00:00.000Z', by: 'agent', operation: 'investigate', question: 'q', result: 'r', evidence: ['read a file'] }];
+  task.operations = [...task.operations,
+    { at: '2026-01-01T00:00:00.000Z', by: 'agent', operation: 'investigate', question: 'q', result: 'r', evidence: ['read a file'] }];
   await writeTask(path, task);
-  await assert.rejects(closeTask(path, 'done', ['1']), /ran no command, so it establishes nothing/);
+  await assert.rejects(closeTask(path, 'done', ['3']), /ran no command, so it establishes nothing/);
 
   await verifyTask(path, 'exit 1');
-  await assert.rejects(closeTask(path, 'done', ['2']), /exited 1\. A failing check does not close a task/);
+  await assert.rejects(closeTask(path, 'done', ['5']), /exited 1\. A failing check does not close a task/);
   assert.equal((await readTask(path)).state, 'open');
 
   await verifyTask(path, 'echo checked');
-  const closed = await closeTask(path, 'The check ran and passed.', ['3']);
+  const closed = await closeTask(path, 'The check ran and passed.', ['7']);
   assert.equal(closed.relied.length, 1);
   assert.match(closed.relied[0], /exit status 0/);
   const complete = await readTask(path);
   assert.equal(complete.state, 'complete');
   assert.match(showTask(complete), /Closed .*The check ran and passed\./);
-  await assert.rejects(closeTask(path, 'again', ['3']), /already complete/);
+  await assert.rejects(closeTask(path, 'again', ['7']), /already complete/);
 });
 
 test('a task cannot claim completion without recording what closed it', async () => {
@@ -164,4 +168,64 @@ test('a task file that is not a task is refused', async t => {
   await writeFile(path, JSON.stringify({ objective: 'a graph, not a task', nodes: [] }));
   await assert.rejects(readTask(path), /needs a slug id, statement, completion condition and openedAt/);
   assert.match(String(await readFile(path, 'utf8')), /a graph, not a task/);
+});
+
+// A verification of a heredoc script rendered its own result twenty-five lines below its own
+// identity, and a stateless reader re-ran a verification that had already passed because of it.
+test('a multi-line question stays under its own label, and a real exit status is on the operation line', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'printf "one\\ntwo\\n"');
+  const shown = showTask(await readTask(path));
+  const lines = shown.split('\n');
+  const header = lines.findIndex(line => /^  1\. verify by tag verify/.test(line));
+  assert.ok(header >= 0, 'the operation has a header line');
+  assert.match(lines[header], /ran a command, exited 0/);
+  // Every line between the header and `reported:` is an indented continuation of `asked:`, so the
+  // result cannot be pushed away from the operation it belongs to by the length of the command.
+  const reported = lines.findIndex((line, index) => index > header && /^     reported: /.test(line));
+  assert.ok(reported > header, 'the result is still rendered');
+  for (const line of lines.slice(header + 2, reported)) {
+    assert.match(line, /^ {7}/, `continuation line is indented under its label: ${JSON.stringify(line)}`);
+  }
+});
+
+test('an operation that ran nothing does not claim it ran a command', async t => {
+  const path = await fixture(t);
+  const task = await readTask(path);
+  task.operations = [{ at: new Date().toISOString(), by: 'runner', operation: 'read something',
+    question: 'What does it say?', result: 'It says a thing.', evidence: [] }];
+  await writeTask(path, task);
+  const shown = showTask(await readTask(path));
+  assert.doesNotMatch(shown, /ran a command, exited/);
+  assert.match(shown, /evidence: none — this is a claim/);
+});
+
+// A close refused for what it cites used to leave nothing behind. A stateless runner re-read the
+// state, saw no trace of the refusal, and proposed the identical close again — twice, verbatim.
+test('a refused close is recorded, so the next reader knows it was refused', async t => {
+  const path = await fixture(t);
+  const task = await readTask(path);
+  task.operations = [{ at: new Date().toISOString(), by: 'runner', operation: 'edit a file',
+    question: 'Can the file be edited?', result: 'It was edited.', evidence: ['$ sed -i s/a/b/ f'] }];
+  await writeTask(path, task);
+  await assert.rejects(closeTask(path, 'The edit is done.', ['1']), /ran no command/);
+  const after = await readTask(path);
+  assert.equal(after.state, 'open', 'a refused close does not complete the task');
+  assert.equal(after.closed, undefined);
+  assert.equal(after.operations.length, 2);
+  assert.equal(after.operations[1].operation, 'refused close');
+  assert.equal(after.operations[1].exit, undefined, 'a refusal ran nothing, so it stamps no exit status');
+  assert.match(after.operations[1].result, /refused and nothing was changed/);
+  assert.match(showTask(after), /refused close/);
+  assert.match(showTask(after), /attempted closing statement: The edit is done\./);
+});
+
+test('a close citing nothing is refused and that refusal is recorded too', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'true');
+  await assert.rejects(closeTask(path, 'Done.', []), /a close with no evidence is a claim/);
+  const after = await readTask(path);
+  assert.equal(after.state, 'open');
+  assert.equal(after.operations.at(-1).operation, 'refused close');
+  assert.match(after.operations.at(-1).evidence[1], /cited: nothing/);
 });

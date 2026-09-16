@@ -390,3 +390,89 @@ every check and every reproduction; judging whether an artifact is honest; and e
 The list is shorter than last time by one item — *carrying the episode's state between operations*
 — and longer by nothing. What moved is not judgement. It is the part where I used to be the thing
 remembering what had already been established.
+
+## The Harbour runner trial, two task episodes (2026-09-16)
+
+The brief this time removed the thing I had done twenty of twenty times: choosing the next
+operation. Two real Harbour tasks were selected from titles, opened as tag-two episodes, and
+then carried by repeated stateless model decisions given nothing but the durable episode state
+and a shell in an isolated clone. Both reached verified completion.
+
+### The two roles, kept separate again
+
+**Judgement I kept, and should have.** Choosing both tasks and writing down why before reading
+any repository code. Writing both completion conditions — episode 2's mutation-based condition
+is the whole reason that episode did not finish with two assertions that witness nothing.
+Declaring the model-escalation rule as a mechanical policy before it fired, so I never compared
+candidate decisions and picked one. Deciding both episodes were over. Judging that the
+descriptions the runner invented for two doc entries are not fit to propose to Harbour.
+
+**Things I did that were only missing machinery.** Cloning, installing, measuring the baseline
+suite. Reading each chosen command before it ran. Two source changes and two harness fixes.
+
+**Things I did NOT do, for the first time in this project.** Choose a single mechanical
+operation. Across 35 executed operations I chose none of them. Where a decision was wrong I
+executed it and preserved it.
+
+### What the machine did that I did not have to
+
+- Investigated before acting, every time, in both episodes — 8 read-only operations in episode 2
+  before the first edit, each producing evidence the next decision used.
+- Discovered on its own that the ticket's line numbers (`workspace-api.js:3202`/`:3210`) had
+  drifted to 3767/3775, and recovered without being told.
+- Reproduced the ticket's own premise rather than trusting it: mutated the twins, watched 63
+  tests stay green, and only then wrote the assertions.
+- Caught its own mutation as unfaithful. Its first mutant flipped `success` but left
+  `issue: null`, and the route's guard is `!result.success || !result.issue`, so the 502 still
+  fired and the new assertions survived. It read the guard, diagnosed the mutation as testing
+  "the wrong half of the OR condition", corrected it, and the assertions went red.
+- Caught a gap in its own verification: a combined `node --test a.js b.js` proves only that at
+  least one file failed, and the completion condition demanded each. It re-ran per file.
+- Used the recorded pre-change suite baseline to read a whole-suite failure as pre-existing and
+  unrelated, instead of thinking it had broken something.
+
+### Where the runner failed, preserved rather than rescued
+
+- It fabricated once. Operation 2 of episode 1 read an empty stdout as "the array is empty".
+  The next decision believed it. The fault was mine as much as the model's: the harness omitted
+  the empty-stdout line entirely, so nothing in state contradicted it.
+- It repeated refuted work. Episode 1's decision 4 re-proposed a command whose
+  `sh: 1: Syntax error: "(" unexpected` was already two operations above it.
+- It re-ran passing verifications three times in episode 1 and once in episode 2.
+- It escalated to the human at the wrong moment — rung 1's fifth-decision `ask-human` carried no
+  question at all.
+- Neither episode ever reached the reserved decisions. Both completion conditions were
+  satisfiable without touching them, and the runner closed instead of asking. It asks nothing on
+  its own initiative; it answers the condition it was given.
+
+### The two source changes, and the failure that earned each
+
+`showTask` rendered a multi-line question inline, so a verification whose command was a 25-line
+heredoc put its own `reported:` line 25 lines below its own header. A stateless reader looking
+for what had already been verified found a wall of Python, concluded nothing had been verified,
+and re-ran a passing check. Multi-line questions and results are now indented under their
+labels, and an operation that really ran a command says its exit status on its own line.
+
+A close refused for what it cites left no trace at all. The runner cited an edit that stamps no
+exit status; tag-two refused; the next stateless decision, reading only durable state, proposed
+the byte-identical close again, and would have forever. A refused close is now an operation of
+its own. The very next decision cited only the verifications. That is the clearest evidence in
+this trial that durable state changes behaviour rather than merely surviving.
+
+### The thing I got wrong
+
+I wrote episode 1's completion condition around membership and order, and the runner satisfied
+it exactly — including two doc entries whose prose it invented, with no LIN reference, unlike
+every sibling entry. The check passed because the check was about the list, and the invention
+was in the descriptions. Nothing mechanical caught it and the runner never mentioned it. I found
+it reading the diff. A completion condition is a specification of what will not be checked, and
+I wrote that one too narrowly.
+
+### Still external, unchanged
+
+Choosing what to work on. Writing the completion condition — which is now demonstrably the
+highest-leverage thing a human does here. Judging whether a change is fit to propose. Designing
+an experiment. And every line of code in this repository.
+
+The list is shorter than last time by one item — *choosing the next bounded operation* — and
+that is the item I have been trying to move for twenty-one runs.
