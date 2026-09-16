@@ -1,0 +1,159 @@
+{
+  "id": "tuned-tolerance",
+  "statement": "A review finding against test/documented-limits.test.js, written in the first task episode: its worst-case cost assertion allows one cent of difference between the documented figure and the computed one, and it passes with $0.000848 to spare. A tolerance chosen after seeing the value it has to admit is not a check. Establish how fragile it is, replace it with a bound that follows from the documentation itself rather than from the number it must pass, and correct whatever the new bound rejects.",
+  "completion": "npm test passes at HEAD with no hand-chosen tolerance left in the worst-case assertion; a command shows the old bound's margin and the new bound's; and the drift negative control still fails on a perturbed documented number.",
+  "reserved": [
+    "Whether the README's figure or the code's limits are the thing to change if the new bound rejects the current text."
+  ],
+  "intent": [
+    {
+      "at": "2026-09-16T05:30:23.002Z",
+      "from": "steward",
+      "kind": "correction",
+      "text": "The one-cent tolerance in the worst-case assertion was picked after computing 0.689152 against a documented 0.68. That is tuning a check until the example passes, which is the thing this project says it does not do."
+    },
+    {
+      "at": "2026-09-16T05:30:23.075Z",
+      "from": "harbour",
+      "kind": "constraint",
+      "text": "Carried from the first episode and still in force: do not change the planner's behaviour or any code constant. Where the documentation and the code disagree, the documentation is what changes."
+    }
+  ],
+  "operations": [
+    {
+      "at": "2026-09-16T05:30:23.146Z",
+      "by": "steward",
+      "operation": "measure",
+      "question": "How much of the one-cent tolerance does the current value actually use, and what bound follows from the documentation instead?",
+      "result": "The computed worst case is $0.689152 against a documented $0.68, a difference of $0.009152. The assertion passes with $0.000848 of its $0.01 tolerance unused — 8.5 percent of the allowance. The only bound available that is not chosen after the fact is the precision of the written figure itself: '$0.68' is written to two decimal places, so it claims the value to within half of its last digit, $0.005. Under that bound the current text is rejected, because $0.009152 exceeds $0.005. The correction the constraint allows is the README figure, which becomes $0.69.",
+      "evidence": [
+        "node -e arithmetic over the six constants; margin 0.000848; half-digit bound 0.005 exceeded"
+      ]
+    },
+    {
+      "at": "2026-09-16T05:30:56.255Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `node --test test/documented-limits.test.js 2>&1 | grep -E 'which claims the figure|^# fail'` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ node --test test/documented-limits.test.js 2>&1 | grep -E 'which claims the figure|^# fail'",
+        "exit status 0",
+        "stdout (last lines):\n  error: 'README states a worst-case of $0.68, which claims the figure to within $0.005, but the limits in the code give $0.689152.'\n# fail 1"
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:30:57.662Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `npm test 2>&1 | tail -5` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ npm test 2>&1 | tail -5",
+        "exit status 0",
+        "stdout (last lines):\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1083.713219"
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:31:09.872Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `cp README.md /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak; fails=0; for sub in '160,000 serialized request bytes|150,000 serialized request bytes' 'roughly \\$0.69|roughly \\$0.68' 'roughly \\$0.69|roughly \\$0.7'; do before=$(echo \"$sub\" | cut -d'|' -f1); after=$(echo \"$sub\" | cut -d'|' -f2); cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; sed -i \"s/$before/$after/\" README.md; if node --test test/documented-limits.test.js >/dev/null 2>&1; then echo \"MISSED: $before -> $after\"; else echo \"caught: $before -> $after\"; fails=$((fails+1)); fi; done; cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; echo \"caught $fails of 3 perturbations\"; test $fails -eq 3` succeed?",
+      "result": "It exited 1. The command ran and reported failure.",
+      "evidence": [
+        "$ cp README.md /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak; fails=0; for sub in '160,000 serialized request bytes|150,000 serialized request bytes' 'roughly \\$0.69|roughly \\$0.68' 'roughly \\$0.69|roughly \\$0.7'; do before=$(echo \"$sub\" | cut -d'|' -f1); after=$(echo \"$sub\" | cut -d'|' -f2); cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; sed -i \"s/$before/$after/\" README.md; if node --test test/documented-limits.test.js >/dev/null 2>&1; then echo \"MISSED: $before -> $after\"; else echo \"caught: $before -> $after\"; fails=$((fails+1)); fi; done; cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; echo \"caught $fails of 3 perturbations\"; test $fails -eq 3",
+        "exit status 1",
+        "stdout (last lines):\ncaught: 160,000 serialized request bytes -> 150,000 serialized request bytes\ncaught: roughly \\$0.69 -> roughly \\$0.68\nMISSED: roughly \\$0.69 -> roughly \\$0.7\ncaught 2 of 3 perturbations"
+      ],
+      "exit": 1
+    },
+    {
+      "at": "2026-09-16T05:31:41.354Z",
+      "by": "steward",
+      "operation": "read",
+      "question": "Why did the negative control miss the third perturbation, and is that the check being wrong?",
+      "result": "It is not. '$0.7' is written to one decimal place, so it claims the figure to within $0.05, and |0.689152 - 0.7| = 0.0108 is inside that. The statement is true, so the check correctly accepts it. The mis-specification was in the control, which treated a true coarser claim as drift. The real property is that a vaguer figure is a weaker claim and therefore a weaker check — the honest cost of deriving the bound from the text instead of choosing one — and it is now written into the test. The control's third case becomes $0.8, which is false at its own precision.",
+      "evidence": [
+        "operation 4 evidence: caught 2 of 3, MISSED roughly $0.69 -> roughly $0.7"
+      ]
+    },
+    {
+      "at": "2026-09-16T05:31:42.181Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `cp README.md /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak; caught=0; for sub in '160,000 serialized request bytes|150,000 serialized request bytes' 'roughly \\$0.69|roughly \\$0.68' 'roughly \\$0.69|roughly \\$0.8' '40,000|30,000'; do before=$(echo \"$sub\" | cut -d'|' -f1); after=$(echo \"$sub\" | cut -d'|' -f2); cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; sed -i \"s/$before/$after/\" README.md; if node --test test/documented-limits.test.js >/dev/null 2>&1; then echo \"MISSED: $before -> $after\"; else echo \"caught: $before -> $after\"; caught=$((caught+1)); fi; done; cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; echo \"caught $caught of 4 perturbations\"; test $caught -eq 4` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ cp README.md /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak; caught=0; for sub in '160,000 serialized request bytes|150,000 serialized request bytes' 'roughly \\$0.69|roughly \\$0.68' 'roughly \\$0.69|roughly \\$0.8' '40,000|30,000'; do before=$(echo \"$sub\" | cut -d'|' -f1); after=$(echo \"$sub\" | cut -d'|' -f2); cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; sed -i \"s/$before/$after/\" README.md; if node --test test/documented-limits.test.js >/dev/null 2>&1; then echo \"MISSED: $before -> $after\"; else echo \"caught: $before -> $after\"; caught=$((caught+1)); fi; done; cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; echo \"caught $caught of 4 perturbations\"; test $caught -eq 4",
+        "exit status 0",
+        "stdout (last lines):\ncaught: 160,000 serialized request bytes -> 150,000 serialized request bytes\ncaught: roughly \\$0.69 -> roughly \\$0.68\ncaught: roughly \\$0.69 -> roughly \\$0.8\ncaught: 40,000 -> 30,000\ncaught 4 of 4 perturbations"
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:32:10.760Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `node -e \"const r=8,b=160000,o=4096,p=0.5,c=1.5;const w=(r*b*p+r*o*c)/1e6;const d=Number(require('fs').readFileSync('README.md','utf8').match(/roughly \\\\$([0-9.]+) before small protocol overhead/)[1]);const prec=0.5*10**-(String(d).split('.')[1]||'').length;console.log('computed worst case   ', w);console.log('old bound             0.01 chosen by hand; unused margin against the old text 0.68:', (0.01-Math.abs(w-0.68)).toFixed(6));console.log('documented now        ', d);console.log('new bound             ', prec, 'derived from the written precision; difference', Math.abs(w-d).toFixed(6));if(Math.abs(w-d)>prec) process.exit(1)\"` succeed?",
+      "result": "It exited 1. The command ran and reported failure.",
+      "evidence": [
+        "$ node -e \"const r=8,b=160000,o=4096,p=0.5,c=1.5;const w=(r*b*p+r*o*c)/1e6;const d=Number(require('fs').readFileSync('README.md','utf8').match(/roughly \\\\$([0-9.]+) before small protocol overhead/)[1]);const prec=0.5*10**-(String(d).split('.')[1]||'').length;console.log('computed worst case   ', w);console.log('old bound             0.01 chosen by hand; unused margin against the old text 0.68:', (0.01-Math.abs(w-0.68)).toFixed(6));console.log('documented now        ', d);console.log('new bound             ', prec, 'derived from the written precision; difference', Math.abs(w-d).toFixed(6));if(Math.abs(w-d)>prec) process.exit(1)\"",
+        "exit status 1",
+        "stderr (last lines):\n\nTypeError: Cannot read properties of null (reading '1')\n    at [eval]:1:176\n    at runScriptInThisContext (node:internal/vm:209:10)\n    at node:internal/process/execution:446:12\n    at [eval]-wrapper:6:24\n    at runScriptInContext (node:internal/process/execution:444:60)\n    at evalFunction (node:internal/process/execution:279:30)\n    at evalTypeScript (node:internal/process/execution:291:3)\n    at node:internal/main/eval_string:74:3\n\nNode.js v22.22.2"
+      ],
+      "exit": 1
+    },
+    {
+      "at": "2026-09-16T05:32:12.085Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `npm test 2>&1 | tail -4` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ npm test 2>&1 | tail -4",
+        "exit status 0",
+        "stdout (last lines):\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1027.583514"
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:32:28.112Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `node tasks/tuned-tolerance.bounds.js` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ node tasks/tuned-tolerance.bounds.js",
+        "exit status 0",
+        "stdout (last lines):\ncomputed worst case from the constants: $0.689152\nold bound: $0.01, chosen by hand. Against the text it was written for ($0.68) it left $0.000848 of that allowance unused.\ndocumented now: $0.69\nnew bound: $0.005, which is half the last digit the README itself writes. Difference: $0.000848.\nThe documented figure is inside the precision it claims."
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:32:38.586Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `npm test 2>&1 | tail -4` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ npm test 2>&1 | tail -4",
+        "exit status 0",
+        "stdout (last lines):\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1169.098301"
+      ],
+      "exit": 0
+    }
+  ],
+  "state": "complete",
+  "openedAt": "2026-09-16T05:30:22.931Z",
+  "closed": {
+    "at": "2026-09-16T05:32:38.662Z",
+    "statement": "The finding held: the one-cent tolerance passed with $0.000848 to spare and had been chosen after seeing the value it had to admit. It is replaced by the precision the README's own figure claims — half of its last written digit — which nobody chooses, and which immediately rejected the documented $0.68 against a computed $0.689152. The constraint carried from the first episode settled what to change without anyone being asked: the text became $0.69 and no code constant moved. Evidence: operation 9 prints both bounds and the difference from constants read out of source, operation 6 shows the check catching four of four perturbations including two of the cost figure itself, and operation 10 is the suite passing. Operations 4 and 7 are left in the record — a control with a mis-specified case that called a true coarser claim drift, and a measurement whose shell quoting broke — because tag verify recorded both as failures rather than accepting the accounts that went with them.",
+    "relied": [
+      "operation 6: $ cp README.md /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak; caught=0; for sub in '160,000 serialized request bytes|150,000 serialized request bytes' 'roughly \\$0.69|roughly \\$0.68' 'roughly \\$0.69|roughly \\$0.8' '40,000|30,000'; do before=$(echo \"$sub\" | cut -d'|' -f1); after=$(echo \"$sub\" | cut -d'|' -f2); cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; sed -i \"s/$before/$after/\" README.md; if node --test test/documented-limits.test.js >/dev/null 2>&1; then echo \"MISSED: $before -> $after\"; else echo \"caught: $before -> $after\"; caught=$((caught+1)); fi; done; cp /tmp/claude-0/-home-user-tag-two/99c5ca13-e448-5a0e-8460-505798b6a73d/scratchpad/nc.bak README.md; echo \"caught $caught of 4 perturbations\"; test $caught -eq 4 → exit status 0",
+      "operation 9: $ node tasks/tuned-tolerance.bounds.js → exit status 0",
+      "operation 10: $ npm test 2>&1 | tail -4 → exit status 0"
+    ]
+  }
+}

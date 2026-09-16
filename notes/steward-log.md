@@ -320,3 +320,73 @@ repository.
 The list is one item shorter than it was twenty-one runs ago, and the item that moved
 — reading the record to find out what is already done — moved because I stopped trying to make
 the planner decide better and started checking its answer instead.
+
+## The task-runner trial, three episodes (2026-09-15/16)
+
+The brief this time narrowed the thing under test: not a system that decomposes objectives, but a
+runner that keeps one authorised task understood while work happens. That changed what I had to do
+and, more usefully, changed which of my interventions were legitimate.
+
+### Human judgement — should plausibly stay with a human or a control plane
+
+- Choosing all three episodes, and choosing them to be heterogeneous.
+- Writing each completion condition, and refusing to weaken episode 1's when it looked thin.
+- Reading two verified quotes' worth of the same problem in a new place: deciding that `$0.7` was a
+  true statement and my control was wrong, not the check.
+- Recommending merge over refuse over document, and John's ruling on it.
+- Deciding that episode 1's tolerance was a defect rather than a rounding convention. Nothing
+  mechanical would have surfaced that; it came from looking at how much of the allowance was unused.
+
+### Missing runner capability — mechanical work tag-two could own, and now does
+
+- Holding a supplied task at all. Before this, a task became either an eighth sentence on a graph
+  answering a different objective or an outcome on an unrelated node.
+- Holding a bounded operation and its result.
+- Running a check and recording what actually came back. This one caught me three times.
+- Refusing a close that cites nothing, cites something that ran nothing, or cites a failure.
+- Saying that a human is needed, and holding the answer on the question it answers.
+
+### Missing runner capability — still missing, and I did all of it
+
+- Every bounded operation. tag-two investigated nothing: I read the code, wrote the reproductions,
+  wrote the checks, and typed the commands it ran. It holds state and runs what it is told.
+- Deciding which operation was mechanically justified next. That was me, every time, and it is the
+  single largest thing still outside.
+- Writing every line of code in this repository, still.
+
+### Experimental stewardship — instrumentation, not product
+
+- The stateless continuation harness in the scratchpad. It measures whether durable state suffices;
+  it is not a capability tag-two should have, and it is deliberately not in `src/`.
+- The perturbation runs. A negative control is how I know a check checks; it is not a feature.
+
+### The thing I got wrong, and what caught it
+
+I wrote episode 1's worst-case assertion with a one-cent tolerance and shipped it feeling fine. It
+passed with $0.000848 of that cent unused — I had computed 0.689152, looked at a documented 0.68,
+and picked an allowance that admitted the gap. That is precisely the move this project says it does
+not make, and I made it while writing the artifact whose purpose was to catch stale numbers. The
+check then hid a real error in the README for a full episode.
+
+Nothing mechanical found it. I found it by reviewing my own artifact as episode 3, which is the
+shape the brief asked for and the reason it asked for it. What the machinery did do is make the
+correction cheap: the finding, the measurement, the new bound, the rejected text and the fix are
+one task file, and the failed attempts are still in it.
+
+### What the machine did that I did not have to
+
+- Refused to let me finish three times, on my own bad commands, without argument.
+- Carried a constraint from the first episode into the third and settled a reserved decision there
+  without my involvement — the first time in this project that recorded intent has changed an
+  outcome rather than merely surviving.
+- Let a stateless model read three finished episodes correctly, including which operations failed
+  and why control had moved, for a third of a cent total.
+
+### Still external, unchanged
+
+Choosing what to work on; choosing the next bounded operation; designing an experiment; writing
+every check and every reproduction; judging whether an artifact is honest; and every line of code.
+
+The list is shorter than last time by one item — *carrying the episode's state between operations*
+— and longer by nothing. What moved is not judgement. It is the part where I used to be the thing
+remembering what had already been established.

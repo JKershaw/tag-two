@@ -73,13 +73,25 @@ test('README’s worst-case cost bound follows from the limits the code enforces
   // request byte is counted as an input token, and every reply spends the whole output budget.
   const worstCase = (requests * bytes * prompt + requests * output * completion) / 1e6;
 
-  const documented = Number(await found('README.md', /roughly \$([\d.]+) before small protocol overhead/, 'documented worst-case cost'));
+  const written = await found('README.md', /roughly \$([\d.]+) before small protocol overhead/, 'documented worst-case cost');
+  const documented = Number(written);
   assert.ok(documented < 1,
     `README claims a worst-case run below $1 but states $${documented}.`);
   assert.ok(worstCase < 1,
     `The limits in the code allow a worst-case run of $${worstCase.toFixed(4)}, which is not below the $1 the README claims.`);
-  // "Roughly" is the README's word, so the check allows a cent of rounding and no more. Doubling
-  // any limit moves the true figure by far more than that.
-  assert.ok(Math.abs(worstCase - documented) <= 0.01,
-    `README states a worst-case of $${documented} but the limits in the code give $${worstCase.toFixed(4)}.`);
+  // This assertion first allowed a cent of difference, and passed with $0.000848 of that cent
+  // unused: the allowance had been chosen after computing the value it had to admit, which is
+  // tuning a check until the example passes. The bound now comes from the documentation instead.
+  // A figure written to N decimal places claims the value to within half of its last digit, so
+  // "$0.68" claimed $0.005 and was wrong by $0.0092; the text became $0.69 and the code's limits
+  // did not move. Nothing here is chosen: change a limit and the bound tightens or loosens with
+  // however precisely the README chooses to state the result. That cuts both ways, and a
+  // perturbation run found it: writing "$0.7" instead of "$0.69" widens the bound to $0.05 and
+  // passes. It should pass, because $0.7 is a true statement about $0.689152, but it means a
+  // vaguer figure is a weaker claim and so a weaker check. That is the honest cost of taking the
+  // bound from the text rather than picking one, and it is the reason the perturbation set in
+  // tasks/tuned-tolerance.json uses $0.8, which is false at its own precision.
+  const precision = 0.5 * 10 ** -((written.split('.')[1] ?? '').length);
+  assert.ok(Math.abs(worstCase - documented) <= precision,
+    `README states a worst-case of $${written}, which claims the figure to within $${precision}, but the limits in the code give $${worstCase.toFixed(6)}.`);
 });
