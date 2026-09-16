@@ -105,10 +105,18 @@ export async function openTask(path, { id, statement, completion, reserved = [] 
 // So the state has one rendering, in text, that says what was asked, what is established, what
 // happened, what evidence exists and why control is where it is.
 export function showTask(task) {
+  // A verification's bounded question is the command it ran, and a command is often a script. Shown
+  // inline, a twenty-five-line heredoc pushed `reported:` twenty-five lines below the operation it
+  // belongs to, and a stateless reader looking for what had already been verified found a wall of
+  // Python where the operation's identity should be. It then re-ran a verification that had already
+  // passed. So a multi-line question is indented under its label the way evidence already is, and
+  // whether an operation really ran something is said on the operation's own line rather than left
+  // to be inferred from the last line of its evidence — that fact is what decides whether a close
+  // may cite it, so it belongs where it can be seen.
   const operations = task.operations.map((item, index) => [
-    `  ${index + 1}. ${item.operation} by ${item.by} (${item.at})`,
-    `     asked: ${item.question}`,
-    `     reported: ${item.result}`,
+    `  ${index + 1}. ${item.operation} by ${item.by} (${item.at})${item.exit === undefined ? '' : ` — ran a command, exited ${item.exit}`}`,
+    `     asked: ${item.question.replace(/\n/g, '\n       ')}`,
+    `     reported: ${item.result.replace(/\n/g, '\n       ')}`,
     item.evidence.length
       ? item.evidence.map(line => `     evidence: ${line.replace(/\n/g, '\n       ')}`).join('\n')
       : '     evidence: none — this is a claim, not an established result',
@@ -242,13 +250,35 @@ export async function answerTask(path, from, text, { now = () => new Date().toIS
   return task.question.answered;
 }
 
+// The refusal above used to happen entirely outside the record. A human steward saw it in their
+// terminal and typed a better close; a stateless runner reading only durable state saw no trace of
+// it, proposed the identical close again, and would have done so forever. So a close that is
+// refused for what it cites is itself recorded as an operation: it really happened to this task,
+// and the next reader needs to know it happened. It carries no exit status, because it ran nothing.
+async function refuseClose(path, task, statement, cited, message, now) {
+  task.operations = [...task.operations, {
+    at: now(), by: 'tag task close', operation: 'refused close',
+    question: 'Does the cited evidence establish the completion condition?',
+    result: `The close was refused and nothing was changed. ${message}`,
+    evidence: [`attempted closing statement: ${statement.trim()}`,
+      cited.length ? `cited: ${cited.join(', ')}` : 'cited: nothing'],
+  }];
+  await writeTask(path, task);
+  return new Error(message);
+}
+
 export async function closeTask(path, statement, cited, { now = () => new Date().toISOString() } = {}) {
   if (typeof statement !== 'string' || !statement.trim()) throw new Error('A closing statement is required.');
   const task = await readTask(path);
   if (task.state === 'complete') throw new Error(`${task.id} is already complete.`);
-  if (!cited.length) throw new Error('Name the verification(s) that establish completion; a close with no evidence is a claim.');
+  if (!cited.length) throw await refuseClose(path, task, statement, cited, 'Name the verification(s) that establish completion; a close with no evidence is a claim.', now);
   if (task.state === 'needs-human') throw new Error(`${task.id} is waiting on a human decision. Answer it before closing.`);
-  const relied = relyOn(task, cited);
+  let relied;
+  try {
+    relied = relyOn(task, cited);
+  } catch (error) {
+    throw await refuseClose(path, task, statement, cited, error.message, now);
+  }
   task.state = 'complete';
   task.closed = { at: now(), statement: statement.trim(), relied };
   await writeTask(path, task);
