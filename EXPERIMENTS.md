@@ -1241,3 +1241,145 @@ adjudication of every unsupported quote were the steward's. *tag-two never asks 
 judgement*: it has no operation for it, and across seven turns it never once said that
 something needed a human — including when its own durable graph became exhausted, which the
 steward had to notice and act on.
+
+## The task-runner trial (three task episodes, no planner runs)
+
+The question changed again, and further than last time. Every trial above treats tag-two as a
+system that turns an objective into a task graph, and measures the graph. This one provisionally
+treats it as something narrower: a persistent, human-directed task runner that could sit underneath
+a control plane which already owns why and what. The control plane decides what is worth doing and
+keeps product judgement and reserved decisions; the runner takes one bounded authorised task and
+carries the mechanical episode — investigation, checks, work, validation, evidence, durable state —
+returning when judgement is required.
+
+Three real episodes were run against this repository. No planning run was made in this trial and
+the planner was not used, because no episode needed it. Every primitive below exists because an
+episode stopped without it, and each is named with the failure that earned it.
+
+### What the first episode hit before it could start
+
+The task was supplied as a control plane would supply one: a statement, constraints, a completion
+condition, and the decisions reserved for the human. tag-two had nowhere to put it.
+
+- Through `tag input` it became an eighth undifferentiated sentence on the durable graph, whose
+  objective is *"Make tag-two better at achieving its purpose."* — a different objective. It
+  carried no identity, no completion condition and no state, so nothing could say whether it was
+  open, blocked or done.
+- Through `tag record` it became an outcome on an unrelated node, and the rendering then reported
+  **"3 tasks · 0 ready · 0 dependency-blocked · 3 worked"** for work nobody had performed. This is
+  the same corruption one human sentence caused in the previous trial, reappearing one level up.
+
+`tag task open` followed. Then the first bounded operation produced a result, and `tag record`
+refused the task outright — *"Expected the original objective, a research summary, and 1–8 nodes"* —
+leaving `intent` as the only slot, which files a machine's unverified finding as human direction.
+`tag task op` followed. Then `op` accepted `npm test: 9999 passing, 0 failing, exit 0` for a command
+that was never run. `tag task verify` followed, and `tag task close` with it, because the episode's
+own completion condition said agent self-report does not count.
+
+### The three episodes
+
+| | episode 1 `readme-limits` | episode 2 `adopt-evidence` | episode 3 `tuned-tolerance` |
+|---|---|---|---|
+| shape | investigation, code change, validation | investigation against doctrine | correction against episode 1's own work |
+| operations recorded | 4 | 6 | 10 |
+| of those, executed commands | 2 | 5 | 8 |
+| failures kept in the record | 0 | 1 | 2 |
+| human asked | no | **yes** | no |
+| outcome | closed on evidence | closed on evidence after a ruling | closed on evidence |
+
+**Episode 1.** Six numeric limits the README states — request budget, output tokens, serialized
+request bytes, the `read_file` bound, the price caps, the file-size exclusion — had never been
+compared to the code. `test/documented-limits.test.js` compares each documented number with the
+constant as written in source, importing nothing from `src/` because the task forbade changing the
+thing under test. All six matched, so nothing was corrected; the check fails with exactly one
+failing test when `160,000` is altered to `150,000`. Both halves are recorded as executed commands.
+
+**Episode 2.** The project's stated doctrine is that an outcome is evidence about work that really
+happened and must outlive the node that proposed it. `tag adopt` violated it two ways, both
+reproduced by scripts using only documented commands on unedited archived planner outputs: with no
+evidence on the durable graph the replacement's outcomes and inputs were **deleted while adopt
+printed "carried 0 recorded outcomes"**, and with evidence on both the replacement's was dropped
+silently. What to do instead was not settleable by investigation — refusing, merging and
+documenting a precondition are all defensible and mean different things about what a durable record
+is — so tag-two asked, for the first time in its history.
+
+**Episode 3.** A review finding against episode 1's own artifact: its worst-case cost assertion
+allowed one cent of difference and passed with **$0.000848 of that cent unused**, so the allowance
+had been chosen after seeing the value it had to admit. It is replaced by the precision the README's
+own figure claims — half of its last written digit — which nobody chooses. That bound immediately
+rejected the documented `$0.68` against a computed `$0.689152`, and the constraint carried from
+episode 1 settled the correction without anyone being asked: the text became `$0.69` and no code
+constant moved. **Episode 1's tuned tolerance had concealed a real error that episode 1 was
+supposed to find.**
+
+### Result 1: durable state alone carried a stateless agent through every episode
+
+Each closed episode's `tag task show` output was handed to a stateless OpenRouter call with no
+repository, no tools and no transcript, and asked what was requested, what was established and by
+what evidence, which operations failed, what the human was asked and said, what remained unresolved
+and where control sat. All three answers were correct on every point, including that episode 2's
+operation 4 failed to a shell bug and was superseded by operation 5, and that episode 3 was settled
+by a carried constraint rather than by asking. Total cost for the three: **$0.00327**.
+
+### Result 2: the failures the record kept are the evidence that it is a record
+
+Three recorded operations are failures, and none of them was the code under test. Two were the
+steward's shell bugs — a `tail` that swallowed an exit status, and broken quoting in a regex — and
+one was a mis-specified control that called a true coarser claim drift. In each case `tag verify`
+recorded the non-zero exit rather than the account that came with it, and in one case `close`
+refused a close that cited a failing operation. **The episode could not be talked to a finish.**
+
+The mis-specified control is worth its own line: perturbing `$0.69` to `$0.7` is *not* caught,
+because `$0.7` is a true statement about `$0.689152` at the precision it claims. The check was
+right and the control was wrong. The real property — a vaguer figure is a weaker claim and so a
+weaker check — is the honest cost of taking a bound from the text rather than picking one, and it
+is now written into the test.
+
+### Result 3: what a human was asked, and what came back
+
+One question was asked in three episodes, and it was a real one. The answer was **a delegation, not
+a ruling**: *"I don't understand the implementation consequences well enough to choose. Give me your
+recommendation and I'll normally accept it."* `tag task answer` stores an answer in the words it
+arrived in and does not interpret it, which is the only reason that distinction survived: a
+mechanism that recorded answers as decisions would have filed a statement about the human's own
+uncertainty as a ruling on `adopt`. The recommendation was made with its consequences, the ruling
+came back separately, and both are on the question they answer.
+
+Episode 3 is the control for that. It had a reserved decision of exactly the same shape — whether to
+change the documentation or the code — and did not ask, because the constraint carried from episode
+1 already supplied it as durable intent. **Intent that was supplied once decided a later episode
+without being re-explained.** That is the thing every previous trial failed to demonstrate: in the
+human-directed loop a recorded intent was preserved, never violated, and left no trace in behaviour.
+
+### What this trial establishes
+
+1. **A bounded task can be carried end to end in durable state, and a stateless agent can pick it
+   up from that state alone.** Three episodes, twenty recorded operations, fifteen executed
+   commands, three correct stateless readings for a third of a cent.
+2. **Evidence stops being a claim when something runs it.** `verify` records the machine's exit
+   status; `close` refuses to complete on anything else; three failures survive in the record
+   because nothing could overwrite them with a better story.
+3. **tag-two can now reach a human judgement boundary and say so.** It did, once, correctly, and
+   did not ask in the two episodes where investigation or supplied intent settled the question.
+4. **Supplied intent became causal.** Episode 3's correction was decided by episode 1's constraint
+   with no human in the loop and no re-explanation.
+5. **A check tuned to pass its own example conceals exactly what it was built to find.** Episode 1's
+   one-cent tolerance hid a real documentation error for the length of one episode. The finding came
+   from reviewing the artifact, not from the artifact.
+
+### Contradictory evidence and confounders, kept
+
+- **The planner was not used at all.** Nothing here tests, improves or rehabilitates it, and nothing
+  here shows that a task runner without it is sufficient for tasks a human did not already scope.
+- **Every bounded operation was performed by the steward or by a shell command.** tag-two has no
+  operation that investigates anything: it holds state, runs what it is told and refuses bad closes.
+  Whether that is the right division or merely the division that was easy is not established.
+- **The three episodes were chosen by the steward, from this repository, knowing its code.** A
+  control plane choosing a task it does not already understand is the untested case.
+- **Two of the three episodes were made possible by defects the steward had already noticed while
+  reading the source.** Episode 2's reproduction confirmed mechanically what a reading had
+  suggested; the reading was not the machine's.
+- **`brought` counts merged evidence by subtraction**, so a duplicate on both graphs reduces it. It
+  reports what was added, not what was offered.
+- **One question is one observation.** That tag-two asked at the right moment once does not show it
+  would not ask at the wrong moment, or fail to ask at another right one.

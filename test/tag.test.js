@@ -490,6 +490,43 @@ test('an answer rejected for skipping investigation is still preserved', async t
   assert.deepEqual(failed.run.investigation, []);
 });
 
+test('adopt carries evidence recorded on the graph being adopted, in time order', async t => {
+  // Both halves are reproduced by tasks/adopt-evidence.repro.sh and .repro-2.sh: the replacement's
+  // outcomes and inputs used to be deleted outright when the durable graph held none, and dropped
+  // silently when it held some. Evidence belongs to the work, not to whichever file recorded it.
+  const durablePath = await graphFile(t);
+  const replacementPath = await graphFile(t, planned());
+  await record(replacementPath, 'investigate', 'Measured on the replacement.', { now: () => '2026-09-16T00:00:00.000Z' });
+  await input(replacementPath, 'steward', 'correction', 'The earlier reading was wrong.', { now: () => '2026-09-16T00:00:00.000Z' });
+
+  const result = await adopt(replacementPath, durablePath);
+  assert.equal(result.carried, 1);
+  assert.equal(result.inputs, 1);
+  assert.equal(result.brought, 2, 'the count says how much came from the adopted graph');
+
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.outcomes.map(item => item.outcome), ['Measured on the replacement.']);
+  assert.deepEqual(after.inputs.map(item => item.text), ['The earlier reading was wrong.']);
+});
+
+test('adopt merges both records in time order and drops only exact duplicates', async t => {
+  const durablePath = await graphFile(t);
+  await record(durablePath, 'investigate', 'Recorded first.', { now: () => '2026-09-16T00:00:00.000Z' });
+  await record(durablePath, 'investigate', 'Shared by both graphs.', { now: () => '2026-09-18T00:00:00.000Z' });
+
+  const replacementPath = await graphFile(t, planned());
+  await record(replacementPath, 'investigate', 'Shared by both graphs.', { now: () => '2026-09-18T00:00:00.000Z' });
+  await record(replacementPath, 'investigate', 'Recorded second.', { now: () => '2026-09-17T00:00:00.000Z' });
+
+  const result = await adopt(replacementPath, durablePath);
+  const after = JSON.parse(await readFile(durablePath, 'utf8'));
+  assert.deepEqual(after.outcomes.map(item => item.outcome),
+    ['Recorded first.', 'Recorded second.', 'Shared by both graphs.'],
+    'time order, and the outcome recorded identically on both graphs appears once');
+  assert.equal(result.carried, 3);
+  assert.equal(result.brought, 1, 'only the genuinely new outcome counts as brought across');
+});
+
 test('adopt replaces a durable graph and carries every recorded outcome across', async t => {
   const durablePath = await graphFile(t);
   await record(durablePath, 'investigate', 'Worked and refuted.', { now: () => '2026-09-16T00:00:00.000Z' });
@@ -500,7 +537,7 @@ test('adopt replaces a durable graph and carries every recorded outcome across',
     { id: 'something-else', title: 'Do something else', reason: 'Later evidence.', evidence: ['src/plan.js:1 — later'], dependsOn: [] },
   ] };
   const result = await adopt(await graphFile(t, replanned), durablePath);
-  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2, inputs: 0 });
+  assert.deepEqual(result, { htmlPath: durablePath.replace(/json$/, 'html'), nodes: 1, carried: 2, retired: 2, inputs: 0, brought: 0 });
 
   const after = JSON.parse(await readFile(durablePath, 'utf8'));
   assert.deepEqual(after.nodes.map(node => node.id), ['something-else']);
@@ -575,7 +612,7 @@ test('adopt into a repository with no durable graph yet just writes one', async 
   const source = await graphFile(t);
   const target = join(source, '..', 'fresh.json');
   const result = await adopt(source, target);
-  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0, inputs: 0 });
+  assert.deepEqual(result, { htmlPath: join(source, '..', 'fresh.html'), nodes: 2, carried: 0, retired: 0, inputs: 0, brought: 0 });
   assert.equal(JSON.parse(await readFile(target, 'utf8')).outcomes, undefined);
 });
 

@@ -26,10 +26,25 @@ export async function adopt(fromPath, ontoPath) {
   if (durable && durable.objective !== replacement.objective) {
     throw new Error(`That graph answers a different objective:\n  durable: ${durable.objective}\n  new:     ${replacement.objective}`);
   }
-  const carried = durable?.outcomes ?? [];
+  // Evidence recorded on the graph being adopted used to be deleted. With no outcomes on the
+  // durable graph the replacement's were dropped and adopt printed "carried 0 recorded outcomes"
+  // while discarding one; with outcomes on both, the replacement's were dropped silently. Both are
+  // reproduced by tasks/adopt-evidence.repro.sh and .repro-2.sh using only documented commands.
+  // John's ruling, recorded in tasks/adopt-evidence.json: merge, in time order, exact duplicates
+  // dropped. Nothing is discarded, because an outcome is evidence about work that really happened
+  // and it belongs to the work rather than to whichever file it was written in first.
+  const merge = (mine = [], theirs = [], key) => {
+    const seen = new Set();
+    return [...mine, ...theirs]
+      .filter(item => !seen.has(key(item)) && seen.add(key(item)))
+      .sort((one, other) => (one.at < other.at ? -1 : one.at > other.at ? 1 : 0));
+  };
+  const carried = merge(durable?.outcomes, replacement.outcomes,
+    item => [item.node, item.title, item.at, item.outcome].join('\u0000'));
   // Input is carried for the same reason outcomes are: it arrived from outside the graph and is
   // not about any one node, so replanning must not throw it away.
-  const inputs = durable?.inputs ?? [];
+  const inputs = merge(durable?.inputs, replacement.inputs,
+    item => [item.at, item.from, item.kind, item.text].join('\u0000'));
   // The transcript stays with the archived run. Adopting the fourteenth run's graph whole put the
   // durable graph at 44 KB, past the planner's own 40,000-byte read limit, so the file recording
   // what the system believes would have been unreadable by it — the README's failure, mechanised.
@@ -46,5 +61,8 @@ export async function adopt(fromPath, ontoPath) {
   const htmlPath = ontoPath.slice(0, -'.json'.length) + '.html';
   await writeFile(resolve(htmlPath), renderGraph(adopted));
   const retired = carried.filter(item => !adopted.nodes.some(node => node.id === item.node)).length;
-  return { htmlPath, nodes: adopted.nodes.length, carried: carried.length, retired, inputs: inputs.length };
+  // Counted separately because the old message was the misleading part: it reported what it kept
+  // from the durable graph and said nothing about what it was deleting from the other one.
+  const brought = carried.length - (durable?.outcomes?.length ?? 0) + inputs.length - (durable?.inputs?.length ?? 0);
+  return { htmlPath, nodes: adopted.nodes.length, carried: carried.length, retired, inputs: inputs.length, brought };
 }

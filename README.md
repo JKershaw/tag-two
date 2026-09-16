@@ -97,7 +97,14 @@ node /absolute/path/to/tag-two/bin/tag.js adopt .tag/graph.json graph/graph.json
 ```
 
 `adopt` replaces the durable graph wholesale and carries every recorded outcome and every
-recorded input across, refusing a graph that answers a different objective. Outcomes whose node no
+recorded input across, refusing a graph that answers a different objective. Evidence recorded on
+the graph being adopted is carried too: both records are merged in time order and only items
+identical in every field are dropped as duplicates, so the same outcome recorded on both graphs
+appears once and two differently worded accounts of it appear side by side. Until this was fixed
+the adopted graph's own evidence was discarded — silently when the durable graph had some of its
+own, and while printing "carried 0 recorded outcomes" when it had none. Both losses are reproduced
+by `tasks/adopt-evidence.repro.sh` and `tasks/adopt-evidence.repro-2.sh`, which now report that
+evidence survives. Outcomes whose node no
 longer exists are kept and shown separately rather than discarded. The new graph's
 investigation transcript is left behind with the archived run and referenced by path,
 because a durable graph larger than one `read_file` call cannot be read by the planner
@@ -131,6 +138,51 @@ are hidden from the planner's own file tools: a run that read `graph/graph.json`
 ordinary tracked file copied node bodies and their citations straight out of it. Every
 other file in that directory is still listed.
 
+A task supplied from outside — the shape a control plane would dispatch — is not an objective and
+does not go in the graph:
+
+```sh
+node /absolute/path/to/tag-two/bin/tag.js task open tasks/example.json example-task \
+  "what was asked" "what would count as verified completion" "a decision reserved for the human"
+node /absolute/path/to/tag-two/bin/tag.js task intent tasks/example.json harbour constraint "do not change the public API"
+node /absolute/path/to/tag-two/bin/tag.js task op tasks/example.json steward investigate "the bounded question" "what it reported" "evidence"
+node /absolute/path/to/tag-two/bin/tag.js task verify tasks/example.json "npm test"
+node /absolute/path/to/tag-two/bin/tag.js task ask tasks/example.json 1,2 "the decision" "why a machine cannot settle it" "what continues after the answer" "option" "option"
+node /absolute/path/to/tag-two/bin/tag.js task answer tasks/example.json john "what they said"
+node /absolute/path/to/tag-two/bin/tag.js task close tasks/example.json "how the cited evidence establishes completion" 2
+node /absolute/path/to/tag-two/bin/tag.js task show tasks/example.json
+```
+
+`tag task` holds one authorised task episode and nothing else. It proposes no work, ranks nothing,
+schedules nothing and calls no model. `open` records what was asked, what would count as verified
+completion and which decisions stay with the human; `intent` keeps a constraint, hypothesis or
+observation in the words it arrived in, with the kind its author gave it. `op` records a bounded
+operation someone performed, and shows one carrying no evidence as a claim rather than a result.
+
+`verify` is the only one of them that establishes anything: it runs the command and records the
+exit status the machine returned, because `op` will write down whatever it is told — handed
+`npm test: 9999 passing, 0 failing, exit 0` for a command that was never run, it recorded it
+without complaint. `close` refuses a close that cites no verification, cites an operation that ran
+nothing, or cites one that failed, and the citations are looked up rather than trusted. Three
+recorded operations across the first three episodes are failures kept in the record: two shell
+bugs of the steward's and one mis-specified control. `tag verify` recorded each as a failure
+rather than accepting the account that came with it, and `close` refused a close citing one.
+
+`ask` returns control. It records the decision required, why machine investigation cannot settle
+it, the evidence it rests on, at least two real options with their consequences, and what continues
+once the answer arrives; a task waiting on an answer cannot be closed or asked again behind its
+back. `answer` keeps the human's reply on the question it answers and puts control back with the
+runner, without interpreting what the reply means — the first real one was `I don't understand the
+implementation consequences well enough to choose, give me your recommendation`, which is a
+delegation and not a ruling. `show` is the whole episode in text, and is what a fresh agent is
+given: handed only that, a stateless model call said correctly what was asked, what was
+established and by what evidence, which operations failed, what the human was asked and said, and
+whether control was still with a human, for under a tenth of a cent per episode.
+
+The three episodes that earned each of these are in [`tasks/`](tasks/) and in
+[`EXPERIMENTS.md`](EXPERIMENTS.md). Nothing here decides what to work on. That is the part a
+control plane already owns.
+
 [`graph/graph.json`](graph/graph.json) is this repository's own working graph, tracked
 rather than left in the ignored `.tag` directory so that tag-two's understanding of its
 own problem is durable, inspectable and readable by the planner.
@@ -151,7 +203,7 @@ budget was paid for by lowering the request limit from ten, leaving the worst-ca
 bound unchanged. It checks model pricing and caps provider prices
 at $0.50/million input tokens and $1.50/million output tokens, with no per-request
 fee. At these limits, even conservatively counting each request byte as an input
-token leaves the run below $1 (roughly $0.68 before small protocol overhead).
+token leaves the run below $1 (roughly $0.69 before small protocol overhead).
 Observed runs cost well under a cent.
 Unavailable models, higher prices, network errors, exhausted limits or invalid
 graphs stop the run without automatic retries, JSON repair or fabricated tasks.
@@ -858,4 +910,17 @@ one target discrepancy of six, and its one success turned out to be a paraphrase
 paragraph in its own input. Supplying a run its own result suppressed investigation in
 both primitives. The trial stopped there rather than building a more elaborate version.
 `EXPERIMENTS.md` has the runs.
+
+Three task episodes then tested a narrower role: not a system that decomposes objectives, but a
+runner that keeps one authorised task understood while work happens, under a control plane that
+already owns what is worth doing. No planning run was made. Twenty bounded operations were recorded
+and fifteen of them were executed commands; three are failures the record kept, because `tag verify`
+stores the exit status the machine returned and `close` refuses a close that cites a failing check.
+tag-two asked a human for a judgement for the first time, once, at a real boundary, and did not ask
+in the two episodes where investigation or already-supplied intent settled the question — a
+constraint recorded in the first episode decided a reserved question in the third with nobody in the
+loop. Handed only a finished episode's state, a stateless model call said correctly what was asked,
+what was established and by what evidence, which operations failed and where control sat, for
+$0.00327 across all three. What it still cannot do is perform a bounded operation or choose which
+one comes next: every one of the twenty was the steward's. `EXPERIMENTS.md` has the episodes.
 
