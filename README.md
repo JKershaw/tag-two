@@ -1,926 +1,195 @@
-tag-two
+# TAG
 
-«A tiny experiment in persistent, agent-assisted problem solving.»
+**A durable record of one authorised task: what was asked, what would count as done, what was
+established, and by what evidence.**
 
-## Run the seed
+A control plane, or a human, decides that a task is worth doing. An agent — or several agents, or a
+person, or all of them in turn — does the work. TAG is the file in between: it holds the episode
+so that whoever picks it up next, including a model with no memory of anything before this message,
+can read what has already been established and what has not.
 
-Requires Node.js 22+ and Git. There are no package dependencies or build step.
-From a Git repository's root, set `OPENROUTER_API_KEY` in your environment (never
-in a tracked file), then run:
+The command is `tag`. The repository and package are `tag-two`, the name of the experiment TAG grew
+out of; every piece of evidence below is filed under it, so it stays.
 
-```sh
-node /absolute/path/to/tag-two/bin/tag.js plan "Make tag-two better at achieving its purpose."
-```
+This is version 0.1.0 and it is small on purpose. It proposes no work, ranks nothing, schedules
+nothing, routes no models, runs nothing concurrently, and chooses no operation. Everything it does
+is a consequence of something that went wrong in a real run; the trail is in
+[`docs/experiments.md`](docs/experiments.md).
 
-An optional final argument selects another repository root. To use the shorter
-`tag plan "objective"` command, run `npm link` in the tag-two checkout first.
-Run the offline tests with `npm test` in that checkout.
+**Needing a human is not a failure, and TAG says so where a caller can act on it.** `tag task ask`
+exits **2** — not 0, and not the 1 that means something went wrong. A task that has reached a real
+judgement boundary is in a third state, and the exit status is the only place a script can tell the
+difference.
 
-The planner uses one OpenRouter model, `deepseek/deepseek-chat-v3-0324`, with
-read-only tools to list/read/search tracked text files and inspect recent commit
-subjects. `read_file` returns a whole file in one call, bounded at 40,000
-characters; anything longer reports the exact line to resume from. The model chooses what to investigate; no source excerpts are selected
-in advance. Add new source files to Git before planning. It cannot execute shell
-commands, run tests, modify source, or work on the proposed tasks. Its claims about
-what works are therefore explicitly unverified unless repository evidence supports them.
+## Requirements
 
-**Data boundary:** the objective and model-requested repository content are sent to
-OpenRouter and its model provider. Use only repositories you are authorized to
-share. Untracked files, common credential paths, symlinks, binary files and files
-larger than 256 KiB are excluded; these filters are not a secret detector. Review
-tracked content for embedded secrets before using the planner.
-
-After investigation, open `.tag/graph.html` directly in a browser. It shows the
-objective, research summary, task reasons and evidence, linked dependencies,
-ready/blocked tasks, and the tool results behind the plan. `.tag/graph.json` is the
-durable, provider-independent graph; its `run` field records model provenance,
-reported cost (or null when unavailable), and investigation history.
-
-The graph is a proposal, not an execution queue: “ready” means no graph dependencies,
-and a human decides what happens next. Nothing runs automatically afterward.
-
-When a node has been worked, record what happened against it:
+Node.js 22 or newer. No dependencies, no build step, no network, no API key — the task runner never
+calls a model. (The experimental planner below does, and is the only part that does.)
 
 ```sh
-node /absolute/path/to/tag-two/bin/tag.js record graph/graph.json expand-tools "what happened"
+git clone https://github.com/JKershaw/tag-two.git
+cd tag-two
+npm test          # the whole suite: offline, no API key, no network
+npm run example   # one complete task episode, start to finish, at zero cost
 ```
 
-`record` appends a timestamped outcome and re-renders the HTML beside the graph. It
-chooses nothing, runs nothing and calls no model; a human still decides which node to
-work and does the work. Outcomes accumulate rather than replace, so a claim and its
-later correction sit side by side, and a node that has any is shown as worked.
+## Five minutes
 
-Outcomes are held on the graph rather than on the node, as
-`{node, title, at, outcome}`. Node ids do not survive replanning — the seventh run's
-ids and the fourteenth's have nothing in common — and an outcome is evidence about
-work that really happened, so it must outlive whichever node happened to propose it.
+`npm run example` runs [`examples/zero-cost-episode/run.sh`](examples/zero-cost-episode/run.sh),
+which carries a real (tiny) task from "here is what was asked" to "here is the evidence it is done"
+in a throwaway work directory. Its subject is a shell script that claims to add and actually
+subtracts. Read the script; it is the fastest way to understand the whole interface.
 
-Input that arrives from outside the graph — a human objective, observation, belief, question,
-priority, constraint, correction or decision, or an observation from a tool — goes in as itself:
+The shape of an episode, which is also the whole workflow (`npm link` in this checkout gets you
+`tag`; otherwise it is `node /path/to/tag-two/bin/tag.js`):
 
 ```sh
-node /absolute/path/to/tag-two/bin/tag.js input graph/graph.json steward observation "this keeps proposing work we've already done"
+tag task open   task.json fix-the-sum "sum.sh must report 2 + 3 as 5." \
+                "sh check.sh, run by tag verify, exits 0." "Whether check.sh is the right check is reserved."
+tag task intent task.json control-plane constraint "Change the script, not the check."
+tag task op     task.json agent investigate "What does sum.sh compute?" "It subtracts." "sum.sh line 2"
+tag task verify task.json "sh check.sh"          # exits 1; the failure is now in the record
+tag task op     task.json agent edit "Make it add." "Line 2 now adds." "the diff"
+tag task verify task.json "sh check.sh"          # exits 0
+tag task close  task.json "The check passes against the changed script." 4
+tag task show   task.json                        # the whole episode, in text
 ```
 
-`tag input` stores `{at, from, kind, text}` on the graph. It attaches to no node, marks nothing
-worked, decides nothing, runs nothing and calls no model, and `kind` is whatever its author called
-it — nothing here interprets or checks it. It exists because there was previously only one way to
-put anything into durable state, and that way was wrong for this: `tag record` demands a node id,
-so a human sentence had to be attached to a node it was not about, the rendering then reported
-"0 ready · 3 worked" when nobody had worked anything, and the planner was handed an unverified
-observation labelled as work already performed. The planner is now given stored input on the same
-gated channel as the outcomes, labelled as a claim to check or as an authoritative human direction.
-
-To find out which of a graph's proposals the record already answers:
+When a decision turns out not to be a machine's to make:
 
 ```sh
-node /absolute/path/to/tag-two/bin/tag.js check .tag/graph.json graph/graph.json
+tag task ask    task.json 4 "the decision required" "why a machine cannot settle it" \
+                "what continues after the answer" "one option" "another option"   # exits 2
+tag task answer task.json john "what they actually said"
 ```
 
-`tag check` asks one bounded question in one model request, with no tools: for each proposed task,
-do the recorded outcomes already report it as done or refuted? A "done" finding must quote an
-outcome word for word, and the quote is looked up in the outcomes rather than trusted — an unfound
-quote is reported as unverified, not repaired and not dropped. It proposes nothing and changes
-nothing. Run against this repository's own durable graph it reported all three nodes already done,
-each with a verbatim quote, for $0.0008.
+## The interface
 
-It is a report and not a gate, deliberately. A verified quote proves the sentence exists, not that
-it supports the finding: two of three "done" verdicts on one run quoted a sentence reporting that
-mirroring happens, not that reducing it was done. Printing the quote turns that into a two-second
-human adjudication rather than a silent wrong answer. Findings are model-generated; only the
-quotes are verified, and only that they appear verbatim.
+Everything is `tag task <command> <task.json> …`. The state is one JSON file; `tag task show`
+renders it as text, and that text is what a fresh agent is handed.
 
-When a later run produces a better graph for the same objective, adopt it:
+| command | what it does |
+|---|---|
+| `open` | records the task as supplied: id, statement, what would count as **verified** completion, and the decisions reserved for the human. Refuses to overwrite an existing task file. |
+| `intent` | keeps something said from outside — a constraint, hypothesis, observation — in the words it arrived in, with the kind its author gave it. Nothing interprets it. |
+| `op` | records a bounded operation somebody performed: who, what question, what they reported, what evidence. An operation with no evidence is shown as *a claim, not an established result*. |
+| `verify` | runs the command and records the exit status the machine returned. The only command here that establishes anything. |
+| `ask` | returns control to a human: the decision, why a machine cannot settle it, the evidence it rests on, at least two real options, and what continues after the answer. |
+| `answer` | keeps the human's reply on the question it answers, without interpreting it, and puts control back with the runner. |
+| `close` | completes the task, citing verifications. The citations are looked up, not trusted. |
+| `show` | prints the whole episode in text. |
 
-```sh
-node /absolute/path/to/tag-two/bin/tag.js adopt .tag/graph.json graph/graph.json
-```
+Exit status: **0** succeeded · **1** failed, including a verification whose command failed · **2**
+control was returned to a human by `tag task ask`. `tag --help` has the long form; `tag --version`
+prints the version.
 
-`adopt` replaces the durable graph wholesale and carries every recorded outcome and every
-recorded input across, refusing a graph that answers a different objective. Evidence recorded on
-the graph being adopted is carried too: both records are merged in time order and only items
-identical in every field are dropped as duplicates, so the same outcome recorded on both graphs
-appears once and two differently worded accounts of it appear side by side. Until this was fixed
-the adopted graph's own evidence was discarded — silently when the durable graph had some of its
-own, and while printing "carried 0 recorded outcomes" when it had none. Both losses are reproduced
-by `tasks/adopt-evidence.repro.sh` and `tasks/adopt-evidence.repro-2.sh`, which now report that
-evidence survives. Outcomes whose node no
-longer exists are kept and shown separately rather than discarded. The new graph's
-investigation transcript is left behind with the archived run and referenced by path,
-because a durable graph larger than one `read_file` call cannot be read by the planner
-it is supposed to inform.
+`verify` executes arbitrary shell in the environment that invoked it, with the calling process's
+working directory and permissions. There is no sandbox, allowlist or dry run, and there is not meant
+to be one at 0.1: this is a local developer tool, and that is part of its contract. It records the
+exit status the command returned, and the last 12 lines of its output — not the whole of it.
 
-To see what a run actually did, without opening a browser or calling a model:
+### The three refusals
 
-```sh
-node /absolute/path/to/tag-two/bin/tag.js observe .tag/graph.json
-```
+Each of these exists because an episode got past its absence, and together they are what stops an
+episode being talked to a finish:
 
-`observe` reads a saved graph or a `failed-run.json` and reports the model, request
-count, cost, which tools were called and which were never called, which files were read
-whole and which came back truncated, whether the objective the model returned is the one
-it was asked, and — for a graph — every evidence citation naming a file that run never
-opened. It was written after fourteen runs had been assessed by hand with throwaway
-scripts asking the same questions.
+1. **A close must cite verifications.** `close` refuses a close that cites nothing, cites an
+   operation that ran no command, or cites one that failed. `op` will write down whatever it is
+   told — handed `npm test: 9999 passing, 0 failing, exit 0` for a command that was never run, it
+   recorded it without complaint — so only the exit status a machine returned can end an episode.
+2. **A refused close is itself recorded.** An earlier refusal happened only in the steward's
+   terminal; the next stateless decision, reading durable state alone, proposed the identical close
+   again and would have forever. A refusal is now an operation with the attempted statement and its
+   citations. The next decision cited only the verifications.
+3. **A task waiting on a human is not closed behind its back**, and cannot be asked a second
+   question until the first is answered.
 
-The objective comparison is instrumentation, not correction. `validateGraph` still treats
-the asked objective as authoritative, but it now keeps an echo that is not byte-identical
-as `objectiveReturned` instead of overwriting it, and `observe` reads a rejected run's
-objective out of its preserved raw answer. Seven runs have rewritten a supplied objective
-and two replaced it with this repository's own; every one was found by a human comparing
-two strings by hand. The comparison is a plain string comparison. Nothing judges whether
-two objectives mean the same thing, and no model is involved in it.
+There are smaller checks too — a task file is never overwritten, a question needs at least two real
+options, a command that could not be started at all records nothing — but nothing interprets
+content. `kind`, `by` and `operation` are the author's own words, not a taxonomy.
 
-The next run is then given those outcomes. Not the graph — only the outcomes, and only
-after it has read a file. Handed whole nodes up front, two real runs restated them
-verbatim and stopped investigating. For the same reason the durable graph and its HTML
-are hidden from the planner's own file tools: a run that read `graph/graph.json` as an
-ordinary tracked file copied node bodies and their citations straight out of it. Every
-other file in that directory is still listed.
+## What it does not do
 
-A task supplied from outside — the shape a control plane would dispatch — is not an objective and
-does not go in the graph:
+It does not decide what is worth doing, decompose an objective, choose the next operation, rank or
+schedule anything, route models, run anything concurrently, sandbox anything, retry anything, or
+investigate a repository. Every one of the 51 operations in the five archived episodes was chosen by
+a human or by an experimental harness outside `src/`
+([`examples/harbour-runner/`](examples/harbour-runner/)), never by TAG.
 
-```sh
-node /absolute/path/to/tag-two/bin/tag.js task open tasks/example.json example-task \
-  "what was asked" "what would count as verified completion" "a decision reserved for the human"
-node /absolute/path/to/tag-two/bin/tag.js task intent tasks/example.json harbour constraint "do not change the public API"
-node /absolute/path/to/tag-two/bin/tag.js task op tasks/example.json steward investigate "the bounded question" "what it reported" "evidence"
-node /absolute/path/to/tag-two/bin/tag.js task verify tasks/example.json "npm test"
-node /absolute/path/to/tag-two/bin/tag.js task ask tasks/example.json 1,2 "the decision" "why a machine cannot settle it" "what continues after the answer" "option" "option"
-node /absolute/path/to/tag-two/bin/tag.js task answer tasks/example.json john "what they said"
-node /absolute/path/to/tag-two/bin/tag.js task close tasks/example.json "how the cited evidence establishes completion" 2
-node /absolute/path/to/tag-two/bin/tag.js task show tasks/example.json
-```
+Full list, with what is known and unknown about each: [`LIMITATIONS.md`](LIMITATIONS.md).
 
-`tag task` holds one authorised task episode and nothing else. It proposes no work, ranks nothing,
-schedules nothing and calls no model. `open` records what was asked, what would count as verified
-completion and which decisions stay with the human; `intent` keeps a constraint, hypothesis or
-observation in the words it arrived in, with the kind its author gave it. `op` records a bounded
-operation someone performed, and shows one carrying no evidence as a claim rather than a result.
+## Why it is shaped like this
 
-`verify` is the only one of them that establishes anything: it runs the command and records the
-exit status the machine returned, because `op` will write down whatever it is told — handed
-`npm test: 9999 passing, 0 failing, exit 0` for a command that was never run, it recorded it
-without complaint. `close` refuses a close that cites no verification, cites an operation that ran
-nothing, or cites one that failed, and the citations are looked up rather than trusted. Three
-recorded operations across the first three episodes are failures kept in the record: two shell
-bugs of the steward's and one mis-specified control. `tag verify` recorded each as a failure
-rather than accepting the account that came with it, and `close` refused a close citing one.
+Every primitive above is named after the failure that earned it, and the failures are real runs, not
+design review. The short version is in [`DESIGN.md`](DESIGN.md); the evidence is in
+[`docs/experiments.md`](docs/experiments.md).
 
-`ask` returns control. It records the decision required, why machine investigation cannot settle
-it, the evidence it rests on, at least two real options with their consequences, and what continues
-once the answer arrives; a task waiting on an answer cannot be closed or asked again behind its
-back. `answer` keeps the human's reply on the question it answers and puts control back with the
-runner, without interpreting what the reply means — the first real one was `I don't understand the
-implementation consequences well enough to choose, give me your recommendation`, which is a
-delegation and not a ruling. `show` is the whole episode in text, and is what a fresh agent is
-given: handed only that, a stateless model call said correctly what was asked, what was
+Five episodes have been carried end to end this way: 51 recorded operations, 25 of them commands run
+by `tag verify`, 6 of which failed and are still in the record, and one judgement returned to a
+human. Two of the five were real tickets in another repository, carried by repeated stateless model
+decisions that were given nothing but the episode state and a shell. Handed only a finished
+episode's `tag task show` output, a stateless model call said correctly what was asked, what was
 established and by what evidence, which operations failed, what the human was asked and said, and
-whether control was still with a human, for under a tenth of a cent per episode.
-
-The three episodes that earned each of these are in [`tasks/`](tasks/) and in
-[`EXPERIMENTS.md`](EXPERIMENTS.md). Nothing here decides what to work on. That is the part a
-control plane already owns.
-
-[`graph/graph.json`](graph/graph.json) is this repository's own working graph, tracked
-rather than left in the ignored `.tag` directory so that tag-two's understanding of its
-own problem is durable, inspectable and readable by the planner.
-Committing a graph is a deliberate exception for this repository, which is its own
-experimental subject; `plan()` still ignores `.tag` by default because graphs of other
-repositories may contain their content. The working graph carries no investigation
-transcript: every run is archived unedited in `examples/`, and an 83 KB duplicate
-inside a tracked file would on its own consume most of the planner's research budget.
-Both outputs stay local and are Git-ignored via a generated `.tag/.gitignore`,
-including when planning in another repository, because they may include repository
-content. Existing `.tag` directories are never overwritten: preserve or move a
-previous experiment explicitly before starting another.
-
-The seed allows at most eight model requests, 4,096 output tokens per request and
-160,000 serialized request bytes. The byte budget has been the binding constraint in
-every run and no run has ever used more than five requests, so the third rise in that
-budget was paid for by lowering the request limit from ten, leaving the worst-case cost
-bound unchanged. It checks model pricing and caps provider prices
-at $0.50/million input tokens and $1.50/million output tokens, with no per-request
-fee. At these limits, even conservatively counting each request byte as an input
-token leaves the run below $1 (roughly $0.69 before small protocol overhead).
-Observed runs cost well under a cent.
-Unavailable models, higher prices, network errors, exhausted limits or invalid
-graphs stop the run without automatic retries, JSON repair or fabricated tasks.
-A matched markdown fence around the answer is removed before parsing, which is an
-envelope, not repair: malformed JSON, prose around the JSON, a drifted objective and
-any invalid graph are still rejected. A run that fails after investigating anything
-writes `.tag/failed-run.json` with the transcript, the raw answer, the request count
-and the reported cost, and keeps the directory so the failure can be diagnosed.
-An output write failure can leave a partial `.tag` directory; inspect it before
-moving it aside.
-
-The first dogfood run should use the objective above exactly once. Inspect its
-unedited graph for usefulness rather than rerunning until the answer looks good.
-
-The complete dogfood experiment log — every run against this repository, what it
-showed, and what it ruled out — is in [`EXPERIMENTS.md`](EXPERIMENTS.md). It was
-split out of this file after it grew past the planner's whole-file read limit and a
-real run investigated a truncated README.
-
----
-
-Why this exists
-
-Modern coding agents are remarkably capable when given a well-defined task.
-
-The harder problem is deciding what should be done next.
-
-Real projects are rarely a queue of perfectly specified independent tickets. An objective may require research before implementation. Research may reveal new work. Tasks may depend on other tasks. Some questions require humans. Some approaches fail. Priorities change as evidence accumulates.
-
-"tag-two" explores a simple idea:
-
-Represent that evolving understanding as a persistent graph, and let agents help investigate and evolve it.
-
-The graph is not primarily a backlog.
-
-It is the system's current model of the problem.
-
----
-
-The core idea
-
-Start with an objective:
-
-«Improve tag-two.»
-
-An agent investigates the relevant repository and problem using its normal tools.
-
-It then constructs a small graph representing useful next work:
-
-Improve tag-two
-│
-├── Understand current behaviour
-│
-├── Investigate an important uncertainty
-│
-├── Improve a demonstrated weakness
-│   └── depends on investigation
-│
-└── Demonstrate the improvement
-
-The graph persists independently of any model conversation.
-
-Later, a node can be investigated or worked on by another agent. Its result changes the graph.
-
-Over time:
-
-objective
-    ↓
-investigate
-    ↓
-graph
-    ↓
-choose useful work
-    ↓
-agent works
-    ↓
-observe result
-    ↓
-update graph
-    ↓
-repeat
-
-Initially, humans may perform some of those transitions manually.
-
-That is intentional.
-
-The experiment is to gradually discover which parts are useful to automate rather than designing the complete autonomous system in advance.
-
----
-
-The hypothesis
-
-A useful agent system does not necessarily need one enormous autonomous context.
-
-Instead, it can maintain durable external state describing:
-
-- what we are trying to achieve;
-- what we currently believe;
-- what has been discovered;
-- what remains uncertain;
-- what work is available;
-- what depends on what;
-- what has already happened;
-- where a human is required.
-
-Agents can then operate on bounded pieces of that state.
-
-This potentially allows different agents, models, tools and humans to collaborate without requiring a single continuous conversation.
-
-The persistent graph is the continuity.
-
----
-
-The most important principle
-
-The graph is the product.
-
-Internal state is only useful if a human can understand it.
-
-At every meaningful stage we should be able to inspect the graph and answer:
-
-- What is the objective?
-- What does the system currently think needs doing?
-- Why?
-- What has it learned?
-- What is runnable now?
-- What is blocked?
-- What depends on something else?
-- Where is human input required?
-- What changed recently?
-
-A JSON representation may be the durable format.
-
-It must not be the primary human interface.
-
-Even a crude HTML representation is preferable if it makes the system understandable at a glance.
-
----
-
-What a node represents
-
-A node represents a meaningful part of the system's understanding of the problem.
-
-A node may eventually represent things such as:
-
-- work;
-- investigation;
-- a question;
-- evidence;
-- a decision;
-- an outcome.
-
-Do not build an elaborate type system until the implementation needs one.
-
-For the first version, a node can be extremely small.
-
-For example:
-
-{
-  "id": "research-current-behaviour",
-  "title": "Understand current planning behaviour",
-  "reason": "We need evidence about the current behaviour before changing it.",
-  "dependsOn": []
-}
-
-Add fields only when a demonstrated use case requires them.
-
----
-
-Research before decomposition
-
-One of the strongest lessons from the original TAG experiment is that decomposition quality depends on research quality.
-
-A model shown a handful of arbitrary source excerpts will tend to generate work related to those excerpts.
-
-That is not necessarily the same as work important to the objective.
-
-For example, an objective such as:
-
-«Improve TAG»
-
-previously produced locally plausible tasks involving protocol fields, validation edge cases and CLI parsing.
-
-Those tasks were not necessarily wrong.
-
-The problem was that the system had insufficient understanding to know whether they mattered.
-
-Therefore:
-
-Do not confuse code inspection with understanding the objective.
-
-Before decomposing a broad objective, an agent should be able to investigate enough context to understand:
-
-1. what the project is trying to achieve;
-2. what currently exists;
-3. what currently works;
-4. what has already been attempted;
-5. what important uncertainties remain;
-6. what would constitute meaningful progress.
-
-The agent should use normal repository tools where possible:
-
-- read files;
-- search;
-- inspect documentation;
-- inspect tests;
-- inspect relevant history;
-- run safe/read-only commands where appropriate.
-
-Do not recreate a coding agent's repository exploration abilities by manually assembling arbitrary source excerpts unless there is a demonstrated reason to do so.
-
----
-
-Agents are capabilities, not the state
-
-An agent may be:
-
-- a hosted coding agent;
-- a model accessed through an API;
-- a local model;
-- a human;
-- another orchestration system.
-
-The graph should not depend on the conversational memory of any particular agent.
-
-A fresh agent should be able to understand the relevant work from durable project state plus whatever repository/environment access it is given.
-
-This means:
-
-«Worker handoffs may be stateless. Durable project understanding cannot be.»
-
-The graph owns continuity.
-
-Agents temporarily contribute reasoning or work.
-
----
-
-Human involvement is normal
-
-Human intervention is not a failure mode.
-
-Especially during bootstrap, a human may:
-
-- choose which node to work next;
-- reject a poor decomposition;
-- answer a question;
-- approve a risky action;
-- select an agent or model;
-- inspect an outcome;
-- decide whether evidence is sufficient.
-
-If an agent lacks a permission or capability, surface that boundary.
-
-Do not silently invent workarounds merely to preserve the appearance of autonomy.
-
-The goal is useful orchestration, not maximum autonomy.
-
----
-
-Bounded agent work
-
-Agents should usually receive bounded work.
-
-A useful pattern is:
-
-inspect
-→ perform one meaningful action
-→ report what happened
-→ update durable state
-→ stop
-
-Avoid agents implicitly continuing through an unlimited chain of work merely because more work is available.
-
-This makes behaviour easier to understand, review and recover.
-
-The appropriate boundaries should emerge through experimentation rather than being specified completely now.
-
----
-
-Model choice
-
-Different graph nodes may eventually benefit from different models.
-
-For example:
-
-- decomposition may favour concise instruction-following;
-- difficult implementation may favour a strong coding model;
-- summarisation may use a cheap model;
-- research may require stronger reasoning or larger context.
-
-Do not build model routing yet.
-
-Start with one model/agent that works.
-
-Model selection becomes part of the system only when there is evidence that it provides meaningful value.
-
-One lesson from the original TAG experiment was that stronger reasoning is not automatically better for every operation.
-
-A reasoning-heavy model repeatedly exhausted a structured planning output budget before producing valid JSON. Disabling reasoning for that bounded structured-planning call produced a valid graph using substantially fewer output tokens.
-
-The broader lesson is:
-
-Use model capability appropriate to the operation rather than simply maximising reasoning effort.
-
----
-
-Cost
-
-Cost matters, particularly if graphs eventually create many agent calls.
-
-But cost optimisation is not the first experiment.
-
-First establish that the system produces useful work.
-
-Then measure.
-
-Then optimise.
-
-Cheap and free models are interesting because sufficiently bounded graph nodes may allow smaller models to perform useful work.
-
-That is a hypothesis worth testing later.
-
-Do not compromise the initial demonstration merely to make it free.
-
----
-
-What we learned from the original TAG
-
-An earlier implementation explored many of these ideas.
-
-It included concepts such as:
-
-- persistent graph state;
-- graph revisions;
-- generations;
-- structured graph mutations;
-- strict proposal validation;
-- controller/worker separation;
-- execution limits;
-- token and cost accounting;
-- model allowlists;
-- provider routing;
-- research-context construction;
-- worker packages;
-- acceptance gates;
-- persistent history;
-- HTML graph rendering.
-
-Many of those ideas may eventually be useful.
-
-They are not requirements for tag-two.
-
-The original experiment taught us that it is easy to build sophisticated orchestration machinery before proving that the central loop is useful.
-
-Several experiments became dominated by debugging the orchestration infrastructure itself:
-
-- model availability;
-- provider routing;
-- reasoning-token behaviour;
-- output-token ceilings;
-- strict JSON proposal validation;
-- research-context selection;
-- controller-state transport;
-- protocol/status compatibility.
-
-Meanwhile the question we actually cared about was much simpler:
-
-«Can the system investigate an objective and produce a useful graph that we can see?»
-
-"tag-two" starts again from that question.
-
----
-
-Things we deliberately do not know yet
-
-We do not yet know the correct:
-
-- graph schema;
-- node taxonomy;
-- scheduling algorithm;
-- mutation protocol;
-- execution protocol;
-- generation semantics;
-- agent transport;
-- model-routing policy;
-- retry policy;
-- prioritisation algorithm;
-- context-building strategy;
-- concurrency model;
-- cost-control system;
-- controller architecture;
-- long-term storage architecture.
-
-These are research questions.
-
-Do not turn them into architecture until actual usage provides evidence.
-
----
-
-What not to build yet
-
-Unless required to make the current demonstration work, do not add:
-
-- autonomous multi-generation execution;
-- controller/worker protocols;
-- generic mutation languages;
-- complex lifecycle state machines;
-- provider abstraction layers;
-- model allowlists;
-- model routing;
-- retries;
-- JSON repair;
-- elaborate cost reservation;
-- concurrency;
-- scheduling;
-- prioritisation engines;
-- background workers;
-- remote services;
-- authentication;
-- web applications;
-- plugin systems;
-- speculative extensibility.
-
-A small amount of ugly glue is acceptable.
-
-Premature infrastructure is not.
-
----
-
-Bootstrap rule
-
-Every iteration should make the next useful iteration less manual.
-
-That is the path toward self-hosting.
-
-For example:
-
-Iteration 0
-human → objective → agent → graph → human
-
-Iteration 1
-human → graph node → agent → result → human updates graph
-
-Iteration 2
-human → graph node → agent → result → system updates graph
-
-Iteration 3
-system suggests next node → human approves → agent works
-
-Iteration 4
-system handles bounded low-risk work itself
-
-This sequence is illustrative, not a roadmap.
-
-Do not implement later iterations until the previous behaviour exists and teaches us something.
-
----
-
-Self-hosting
-
-"tag-two" should eventually help improve "tag-two".
-
-This is not merely a novelty.
-
-Self-hosting provides a useful feedback loop because weaknesses in the orchestration system become real problems represented inside the system itself.
-
-The desired pattern is:
-
-tag-two identifies useful work
-        ↓
-one of those tasks improves tag-two
-        ↓
-the improved tag-two handles the next iteration
-
-A useful guiding phrase is:
-
-«The graph should eventually contain the work required to remove humans from the parts of the graph where they add no value.»
-
-Humans should remain where judgement, preference, authority or approval genuinely matters.
-
----
-
-Relationship to larger systems
-
-This experiment is deliberately tiny.
-
-A larger orchestration system such as Harbour may eventually provide interfaces, task-provider integration, richer agent dispatch, chat interaction, prioritisation and operational views around concepts like these.
-
-Do not design tag-two around Harbour.
-
-If the primitive is genuinely useful, integration opportunities will become obvious later.
-
-tag-two should remain understandable and runnable independently.
-
----
-
-Portability
-
-The underlying idea should not depend on a particular coding-agent vendor.
-
-A future graph node might be worked by:
-
-- Claude Code;
-- Codex;
-- Copilot;
-- an OpenRouter model;
-- a local model;
-- Harbour;
-- a human.
-
-Do not implement all of these.
-
-But avoid making the graph itself synonymous with one provider's conversation format.
-
----
-
-The first implementation
-
-The first version has one job:
-
-objective + repository
-        ↓
-agent investigates repository
-        ↓
-small task graph
-        ↓
-graph.json
-        ↓
-graph.html
-
-Then stop.
-
-No graph tasks are executed.
-
-The planner should produce a small graph — roughly a handful of nodes, not an exhaustive backlog.
-
-Each proposed task should answer:
-
-Why is this useful for the objective?
-
-Dependencies should exist only when they carry real meaning.
-
-The agent should investigate the repository itself rather than receiving a manually curated approximation of it.
-
----
-
-First dogfood objective
-
-Once the minimum implementation exists, run it against its own repository with:
-
-«Make tag-two better at achieving its purpose.»
-
-This is the first meaningful experiment.
-
-Do not manually design the answer.
-
-Do not repeatedly rerun the planner until it produces something we like.
-
-Generate a real graph and inspect what it actually thought.
-
-The important question is:
-
-«Would an experienced developer consider this decomposition useful?»
-
-Not perfect.
-
-Useful.
-
----
-
-First success criterion
-
-We should be able to run something conceptually similar to:
-
-tag plan "Make tag-two better at achieving its purpose."
-
-and receive:
-
-.tag/
-  graph.json
-  graph.html
-
-Opening "graph.html" should make the system's reasoning inspectable.
-
-We should be able to see:
-
-- the objective;
-- the proposed tasks;
-- why they matter;
-- dependencies;
-- enough evidence/context to understand why the agent proposed them.
-
-The exact command and storage format are implementation details.
-
-Choose the smallest thing that works.
-
----
-
-What happens after that
-
-Nothing automatically.
-
-We inspect the graph.
-
-If it is poor, that is evidence.
-
-We improve the part of tag-two responsible for the weakness.
-
-If it is useful, we choose one node from the graph tag-two itself produced.
-
-An agent works that node.
-
-Then we determine the smallest mechanism necessary to feed the result back into the graph.
-
-That becomes the next implementation step.
-
-Not before.
-
----
-
-Development philosophy
-
-Prefer:
-
-- vanilla JavaScript;
-- small modules;
-- few dependencies;
-- files over services where practical;
-- explicit behaviour;
-- inspectable state;
-- simple commands;
-- boring data structures;
-- changes justified by observed needs.
-
-Avoid cleverness whose value has not yet been demonstrated.
-
-The project should remain small enough that one developer can understand the complete system.
-
----
-
-A test for every proposed feature
-
-Before adding infrastructure, ask:
-
-«What happened in a real tag-two run that makes us need this?»
-
-If there is no concrete answer, don't build it yet.
-
----
-
-Current mission
-
-Build the smallest seed capable of producing its first useful self-directed graph.
-
-Then let that graph help determine what comes next.
-
-Do not build the final system.
-
-Build the thing that lets us run the next experiment.
-
-Where that stands after forty-one runs, in short: a real improvement to tag-two has
-travelled through tag-two's own durable graph, and a complete cycle — ready node,
-work, measurement, recorded outcome, adopted graph — has run through it. The graph is
-now honest about its evidence and knows what has already been tried. It is not yet
-useful at deciding what should be done next: run against this repository as it stood
-twenty runs ago, with none of the accumulated analysis in its input, it produces the
-same shape of decomposition it produced then.
-
-Twenty further runs tested whether a narrower objective fixes that, and it does not, at
-least not here. Objectives taken from the durable graph's own ready nodes produced no
-graph at all in seven attempts — the planner rewrites a node title into an objective and
-the echo check rejects it, and twice it replaced the given objective with this
-repository's standing one. Against the seed commit, where no analysis of any run is in
-the planner's input, a bounded objective naming a failure that can be found in the code
-did decompose materially better than the broad one, replicated across four runs; a
-bounded objective naming a quantity with nowhere to look did not. The active ingredient
-is the objective's relationship to the code, not its width, and the accumulated prose in
-this repository outweighs both.
-
-Four further runs and eighteen checks then changed the question rather than the mechanism. Human
-intervention had been treated throughout as scaffolding to remove; it is now treated as a
-legitimate source of state, and what should shrink is unnecessary human cognitive labour rather
-than human judgement. One real steward observation — "this keeps proposing work we've already
-done" — was stored, supplied to the planner, and made the next graph worse on the very thing it
-named: four of six proposed tasks were work the recorded outcomes already report, against one of
-five in a pre-registered control run that was never told. The planner cannot answer a claim about
-its own output. `tag check` can, and reported this repository's whole durable graph exhausted, with
-quotes, for a tenth of a cent — agreeing with a human judgement written down before the mechanism
-existed. A later stateless run then cited "the steward's observation and the tag check" in its
-reasoning, so durable human input does reach a fresh agent and shape it. It does not correct it:
-three consecutive runs reproposed work the record in their own input reports as done, and across
-eleven archived runs handed that record, 24 of 47 proposed tasks were work it already answers.
-A recorded human intent was preserved and never violated, and also left no trace in behaviour and
-produced no conflict report against the README sentence that contradicts it. tag-two never once
-asked for a human judgement, including when its own graph became exhausted. `EXPERIMENTS.md` has
-the runs.
-
-Forty-three earlier runs had tested the strongest remaining explanation: that useful work
-has to be derived from an explicit epistemic state and an explicit choice of next
-operation rather than generated straight from a broad objective. Replayed against six
-moments in this repository's own history, with the later answer withheld, that primitive
-did not out-decide the shipped planner — it scored two points to the planner's two, named
-one target discrepancy of six, and its one success turned out to be a paraphrase of a
-paragraph in its own input. Supplying a run its own result suppressed investigation in
-both primitives. The trial stopped there rather than building a more elaborate version.
-`EXPERIMENTS.md` has the runs.
-
-Three task episodes then tested a narrower role: not a system that decomposes objectives, but a
-runner that keeps one authorised task understood while work happens, under a control plane that
-already owns what is worth doing. No planning run was made. Twenty bounded operations were recorded
-and fifteen of them were executed commands; three are failures the record kept, because `tag verify`
-stores the exit status the machine returned and `close` refuses a close that cites a failing check.
-tag-two asked a human for a judgement for the first time, once, at a real boundary, and did not ask
-in the two episodes where investigation or already-supplied intent settled the question — a
-constraint recorded in the first episode decided a reserved question in the third with nobody in the
-loop. Handed only a finished episode's state, a stateless model call said correctly what was asked,
-what was established and by what evidence, which operations failed and where control sat, for
-$0.00327 across all three. What it still cannot do is perform a bounded operation or choose which
-one comes next: every one of the twenty was the steward's. `EXPERIMENTS.md` has the episodes.
-
+where control sat. That was measured on three finished episodes, at $0.00327 for all three.
+
+The episodes themselves are in [`tasks/`](tasks/), unedited, including the failures.
+
+## The experimental planner
+
+`tag plan`, `record`, `input`, `adopt`, `check` and `observe` are the research line the task runner
+came out of: an attempt to turn a broad objective into a useful task graph. They still work, they
+are still tested, and they are **not** the 0.1 interface. Eighty-eight recorded runs across four
+trials are written up in [`docs/experiments.md`](docs/experiments.md), including the ones that
+refuted the idea: handed its own recorded outcomes, the planner reproposed work those outcomes
+report as already done in three consecutive runs, and across eleven archived runs 24 of 47 proposed
+tasks were work the record already answers.
+
+They are kept because deleting them would delete the evidence the task runner was derived from. If
+you only want the task runner, you can ignore this section entirely.
+
+```sh
+OPENROUTER_API_KEY=… tag plan "Make tag-two better at achieving its purpose."
+```
+
+`plan` uses one OpenRouter model, `deepseek/deepseek-chat-v3-0324`, with read-only tools to
+list/read/search tracked text files and inspect recent commit subjects. `read_file` returns a whole
+file in one call, bounded at 40,000 characters; anything longer reports the line to resume from. It
+writes `.tag/graph.json` and `.tag/graph.html` and then stops. Nothing runs afterwards: "ready"
+means a node has no unmet graph dependencies, and a human decides what happens next.
+
+**Data boundary.** The objective and model-requested repository content are sent to OpenRouter and
+its model provider. Use only repositories you are authorised to share. Untracked files, common
+credential paths, symlinks, binary files and files larger than 256 KiB are excluded; these filters
+are not a secret detector. Review tracked content for embedded secrets before planning.
+
+**Cost bounds.** A run allows at most eight model requests, 4,096 output tokens per request and
+160,000 serialized request bytes. It refuses to start if the model is priced above
+$0.50/million input tokens or above $1.50/million output tokens, or charges a per-request fee.
+Counting even every request byte as an input token, the worst case stays under $1 —
+roughly $0.69 before small protocol overhead. Observed runs cost well under a cent.
+`test/documented-limits.test.js` compares every one of those numbers with the constant in the
+source, so this paragraph cannot drift from the code without a test failing.
+
+Unavailable models, higher prices, network errors, exhausted limits or invalid graphs stop the run
+without retries, JSON repair or fabricated tasks. A run that fails after investigating anything
+writes `.tag/failed-run.json` with its transcript so the failure can be diagnosed.
+
+## Layout
+
+```
+bin/tag.js     the CLI
+src/task.js    the task runner — the 0.1 interface
+src/*.js       the experimental planner and graph commands
+test/          the test suite, offline throughout
+tasks/         the five real episodes, unedited, including their failures
+graph/         this repository's own durable graph, from the planner line
+examples/      the runnable example, plus every archived experiment run
+docs/          the experiment log, the steward's notes, background research
+```
+
+Detail lives in [`DESIGN.md`](DESIGN.md), [`LIMITATIONS.md`](LIMITATIONS.md),
+[`CHANGELOG.md`](CHANGELOG.md) and [`docs/experiments.md`](docs/experiments.md).
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).

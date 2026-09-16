@@ -1,9 +1,10 @@
 {
   "name": "tag-two",
   "version": "0.1.0",
-  "description": "A tiny repository-investigating task graph experiment",
+  "description": "A durable record of one authorised task: what was asked, what would count as done, what was established, and by what evidence",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "example": "sh examples/zero-cost-episode/run.sh"
   },
   "repository": {
     "type": "git",
@@ -16,5 +17,12 @@
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "keywords": [
+    "task",
+    "durable-state",
+    "evidence",
+    "agents",
+    "cli"
+  ]
 }

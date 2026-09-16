@@ -1,3 +1,6 @@
+// Experimental. The planning and graph line (plan, record, input, adopt, check, observe) is the
+// research the task runner came out of, kept because it is the evidence for it, not because it
+// works: see LIMITATIONS.md and docs/experiments.md before relying on anything here.
 import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { repositoryTools, tools } from './repository.js';
