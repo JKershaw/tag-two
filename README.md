@@ -32,7 +32,8 @@ which carries a real (tiny) task from "here is what was asked" to "here is the e
 in a throwaway work directory. Its subject is a shell script that claims to add and actually
 subtracts. Read the script; it is the fastest way to understand the whole interface.
 
-The shape of an episode, which is also the whole workflow:
+The shape of an episode, which is also the whole workflow (`npm link` in this checkout gets you
+`tag`; otherwise it is `node /path/to/tag-two/bin/tag.js`):
 
 ```sh
 tag task open   task.json fix-the-sum "sum.sh must report 2 + 3 as 5." \
@@ -72,12 +73,12 @@ renders it as text, and that text is what a fresh agent is handed.
 
 Exit status: **0** succeeded · **1** failed, including a verification whose command failed · **2**
 control was returned to a human by `tag task ask`. `tag --help` has the long form; `tag --version`
-prints the version. To type `tag` instead of `node /path/to/tag-two/bin/tag.js`, run `npm link` in
-this checkout.
+prints the version.
 
 ### The three refusals
 
-These are the only opinions in the code, and each one exists because an episode got past its absence:
+Each of these exists because an episode got past its absence, and together they are what stops an
+episode being talked to a finish:
 
 1. **A close must cite verifications.** `close` refuses a close that cites nothing, cites an
    operation that ran no command, or cites one that failed. `op` will write down whatever it is
@@ -90,7 +91,9 @@ These are the only opinions in the code, and each one exists because an episode 
 3. **A task waiting on a human is not closed behind its back**, and cannot be asked a second
    question until the first is answered.
 
-Nothing else is enforced. `kind`, `by` and `operation` are the author's own words, not a taxonomy.
+There are smaller checks too — a task file is never overwritten, a question needs at least two real
+options, a command that could not be started at all records nothing — but nothing interprets
+content. `kind`, `by` and `operation` are the author's own words, not a taxonomy.
 
 ## What it does not do
 
@@ -114,7 +117,7 @@ human. Two of the five were real tickets in another repository, carried by repea
 decisions that were given nothing but the episode state and a shell. Handed only a finished
 episode's `tag task show` output, a stateless model call said correctly what was asked, what was
 established and by what evidence, which operations failed, what the human was asked and said, and
-where control sat — for about a tenth of a cent per episode.
+where control sat. That was measured on three finished episodes, at $0.00327 for all three.
 
 The episodes themselves are in [`tasks/`](tasks/), unedited, including the failures.
 

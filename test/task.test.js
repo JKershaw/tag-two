@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask, validateTask } from '../src/task.js';
+import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask, answerTask, validateTask } from '../src/task.js';
 
 async function fixture(t) {
   const directory = await mkdtemp(join(tmpdir(), 'tag-task-'));
@@ -150,6 +150,54 @@ test('a task waiting on a human is not closed behind its back', async t => {
   await assert.rejects(closeTask(path, 'done anyway', ['1']), /waiting on a human decision/);
   await assert.rejects(askTask(path, { ...question, cited: ['1'] }), /already waiting on an answer/);
   assert.equal((await readTask(path)).state, 'needs-human');
+});
+
+// The first real answer was "I don't understand the implementation consequences well enough to
+// choose, give me your recommendation" — a delegation, not a ruling on the merits. That distinction
+// survived only because nothing interprets an answer. Storing it as said is the whole mechanism,
+// so it is pinned: the words, who said them, and that control goes back to the runner.
+test('an answer is kept on the question it answers, in the words it arrived in', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  await askTask(path, { ...question, cited: ['1'] });
+
+  const said = 'I do not understand the consequences well enough to choose. Give me your recommendation.';
+  const answered = await answerTask(path, 'john', said);
+  assert.equal(answered.from, 'john');
+  assert.equal(answered.text, said);
+
+  const task = await readTask(path);
+  assert.equal(task.state, 'open', 'answering returns control to the runner');
+  assert.equal(task.question.answered.text, said, 'the answer stays on the question it answers');
+  const shown = showTask(task);
+  assert.match(shown, /Control returned to a human .*[^.]\.$/m);
+  assert.doesNotMatch(shown, /and is still there/);
+  assert.match(shown, /Answered .* by john, in their words: I do not understand/);
+  // A task that has been answered can be closed again, on evidence, without being re-asked.
+  await closeTask(path, 'The recommendation was accepted and the check passes.', ['1']);
+  assert.equal((await readTask(path)).state, 'complete');
+});
+
+test('an answer needs a question, and a question takes only one answer', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  await assert.rejects(answerTask(path, 'john', 'go ahead'), /is not waiting on an answer/);
+  await askTask(path, { ...question, cited: ['1'] });
+  await assert.rejects(answerTask(path, '', 'go ahead'), /A source is required/);
+  await assert.rejects(answerTask(path, 'john', '   '), /An answer is required/);
+  assert.equal((await readTask(path)).state, 'needs-human', 'a rejected answer changes nothing');
+  await answerTask(path, 'john', 'go ahead');
+  // Answering returns control to the runner, so a second answer is refused for that reason: the
+  // task is no longer waiting on one. An answer is never overwritten with a better one.
+  await assert.rejects(answerTask(path, 'john', 'actually, no'), /is not waiting on an answer/);
+  assert.equal((await readTask(path)).question.answered.text, 'go ahead');
+});
+
+test('a complete task is not asked a question after the fact', async t => {
+  const path = await fixture(t);
+  await verifyTask(path, 'echo reproduced');
+  await closeTask(path, 'The check ran and passed.', ['1']);
+  await assert.rejects(askTask(path, { ...question, cited: ['1'] }), /is already complete/);
 });
 
 test('a task needs a human exactly when it records what it is asking', async () => {

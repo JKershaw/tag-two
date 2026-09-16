@@ -216,8 +216,9 @@ function relyOn(task, cited, { ran = true } = {}) {
 // the options as they really are, and what will continue once the answer arrives.
 export async function askTask(path, { decision, why, continues, options, cited },
   { now = () => new Date().toISOString() } = {}) {
-  for (const [name, value] of [['decision', decision], ['why', why], ['what continues after the answer', continues]]) {
-    if (typeof value !== 'string' || !value.trim()) throw new Error(`A ${name} is required.`);
+  for (const [what, value] of [['A decision', decision], ['A reason why a machine cannot settle it', why],
+    ['A statement of what continues after the answer', continues]]) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`${what} is required.`);
   }
   if (!Array.isArray(options) || options.length < 2) throw new Error('Give at least two real options; one option is a decision already taken.');
   const task = await readTask(path);
@@ -239,8 +240,8 @@ export async function askTask(path, { decision, why, continues, options, cited }
 // the first real one was "I don't understand the consequences well enough to choose, give me your
 // recommendation", which is a delegation and not a ruling on the merits, and it is stored as said.
 export async function answerTask(path, from, text, { now = () => new Date().toISOString() } = {}) {
-  for (const [name, value] of [['source', from], ['answer', text]]) {
-    if (typeof value !== 'string' || !value.trim()) throw new Error(`A ${name} is required.`);
+  for (const [what, value] of [['A source', from], ['An answer', text]]) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`${what} is required.`);
   }
   const task = await readTask(path);
   if (task.state !== 'needs-human' || !task.question) throw new Error(`${task.id} is not waiting on an answer.`);

@@ -26,6 +26,9 @@ Nothing in the task runner calls a model, opens a network connection or needs an
   the CLI dispatches and dispatches every command it lists.
 - `test/episodes.test.js` — the five archived episodes still validate as tasks, are complete, and
   closed on evidence; and the README's count of what they contain is checked against the files.
+- Tests for `tag task answer`, which had none: an answer is kept in the words it arrived in, on the
+  question it answers, and control returns to the runner; a complete task is not asked a question
+  after the fact.
 - `DESIGN.md`, `LIMITATIONS.md` and this changelog.
 
 ### Changed
@@ -39,6 +42,9 @@ Nothing in the task runner calls a model, opens a network connection or needs an
   mean.
 - `package.json`'s description now says what the project is rather than what it was trying to be,
   and `npm run example` was added.
+- Three argument-validation messages now read as English: "A answer is required" became "An answer
+  is required", and `tag task ask`'s messages name what is missing ("A reason why a machine cannot
+  settle it is required") instead of interpolating a field name. No behaviour changed.
 
 ### Moved
 
