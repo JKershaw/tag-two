@@ -98,7 +98,7 @@ async function callModel(messages) {
     model: MODEL,
     messages,
     temperature: 0,
-    max_tokens: 3000,
+    max_tokens: 12000,
     usage: { include: true },
   };
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
