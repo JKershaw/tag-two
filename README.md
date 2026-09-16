@@ -911,3 +911,16 @@ paragraph in its own input. Supplying a run its own result suppressed investigat
 both primitives. The trial stopped there rather than building a more elaborate version.
 `EXPERIMENTS.md` has the runs.
 
+Three task episodes then tested a narrower role: not a system that decomposes objectives, but a
+runner that keeps one authorised task understood while work happens, under a control plane that
+already owns what is worth doing. No planning run was made. Twenty bounded operations were recorded
+and fifteen of them were executed commands; three are failures the record kept, because `tag verify`
+stores the exit status the machine returned and `close` refuses a close that cites a failing check.
+tag-two asked a human for a judgement for the first time, once, at a real boundary, and did not ask
+in the two episodes where investigation or already-supplied intent settled the question — a
+constraint recorded in the first episode decided a reserved question in the third with nobody in the
+loop. Handed only a finished episode's state, a stateless model call said correctly what was asked,
+what was established and by what evidence, which operations failed and where control sat, for
+$0.00327 across all three. What it still cannot do is perform a bounded operation or choose which
+one comes next: every one of the twenty was the steward's. `EXPERIMENTS.md` has the episodes.
+
