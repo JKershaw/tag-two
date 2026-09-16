@@ -1,17 +1,25 @@
-# tag-two
+# TAG
 
 **A durable record of one authorised task: what was asked, what would count as done, what was
 established, and by what evidence.**
 
 A control plane, or a human, decides that a task is worth doing. An agent — or several agents, or a
-person, or all of them in turn — does the work. tag-two is the file in between: it holds the episode
+person, or all of them in turn — does the work. TAG is the file in between: it holds the episode
 so that whoever picks it up next, including a model with no memory of anything before this message,
 can read what has already been established and what has not.
 
-It is version 0.1.0 and it is small on purpose. It proposes no work, ranks nothing, schedules
+The command is `tag`. The repository and package are `tag-two`, the name of the experiment TAG grew
+out of; every piece of evidence below is filed under it, so it stays.
+
+This is version 0.1.0 and it is small on purpose. It proposes no work, ranks nothing, schedules
 nothing, routes no models, runs nothing concurrently, and chooses no operation. Everything it does
 is a consequence of something that went wrong in a real run; the trail is in
 [`docs/experiments.md`](docs/experiments.md).
+
+**Needing a human is not a failure, and TAG says so where a caller can act on it.** `tag task ask`
+exits **2** — not 0, and not the 1 that means something went wrong. A task that has reached a real
+judgement boundary is in a third state, and the exit status is the only place a script can tell the
+difference.
 
 ## Requirements
 
@@ -75,6 +83,11 @@ Exit status: **0** succeeded · **1** failed, including a verification whose com
 control was returned to a human by `tag task ask`. `tag --help` has the long form; `tag --version`
 prints the version.
 
+`verify` executes arbitrary shell in the environment that invoked it, with the calling process's
+working directory and permissions. There is no sandbox, allowlist or dry run, and there is not meant
+to be one at 0.1: this is a local developer tool, and that is part of its contract. It records the
+exit status the command returned, and the last 12 lines of its output — not the whole of it.
+
 ### The three refusals
 
 Each of these exists because an episode got past its absence, and together they are what stops an
@@ -101,7 +114,7 @@ It does not decide what is worth doing, decompose an objective, choose the next 
 schedule anything, route models, run anything concurrently, sandbox anything, retry anything, or
 investigate a repository. Every one of the 51 operations in the five archived episodes was chosen by
 a human or by an experimental harness outside `src/`
-([`examples/harbour-runner/`](examples/harbour-runner/)), never by tag-two.
+([`examples/harbour-runner/`](examples/harbour-runner/)), never by TAG.
 
 Full list, with what is known and unknown about each: [`LIMITATIONS.md`](LIMITATIONS.md).
 

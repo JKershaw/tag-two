@@ -28,10 +28,16 @@ here is either observed or explicitly untested; nothing is a plan.
 - **`op` records claims as given.** Only `verify` establishes anything. An operation with no
   evidence is *shown* as a claim, but it is still stored.
 - **Nothing validates `kind`, `by` or `operation`.** They are the author's words on purpose.
-- **`verify` runs whatever it is handed**, with the working directory of the calling process, a
-  10-minute timeout and a 4 MiB output buffer. There is no sandbox, no allowlist and no dry run.
-  Only the last 12 lines of stdout and stderr are kept as evidence; a failure whose cause is further
-  up is not in the record.
+- **`verify` runs whatever it is handed**, with the working directory and permissions of the calling
+  process, a 10-minute timeout and a 4 MiB output buffer. There is no sandbox, no allowlist and no
+  dry run. This is deliberate at 0.1 — sandboxing would be a substantial new capability with no
+  experiment behind its design — and it means TAG executes arbitrary shell in the caller's
+  environment.
+- **TAG records the command's actual exit status, but does not preserve the complete command
+  output.** Only the last 12 lines of stdout and stderr are kept. "Durable evidence" therefore means
+  *this command ran and exited N*, which is the machine's own answer and is complete; it does not
+  mean *here is everything the command printed*. A failure whose cause is further up its output is
+  not in the record, and nothing detects that it was cut.
 - **Timestamps come from the machine that ran the command.** There is no clock authority, and
   nothing detects a task file edited by hand.
 
