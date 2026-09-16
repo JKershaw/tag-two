@@ -5,10 +5,10 @@ import { input } from '../src/input.js';
 import { adopt } from '../src/adopt.js';
 import { check, report } from '../src/check.js';
 import { observe, describe } from '../src/observe.js';
-import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask } from '../src/task.js';
+import { openTask, readTask, writeTask, showTask, verifyTask, closeTask, askTask, answerTask } from '../src/task.js';
 import { resolve } from 'node:path';
 
-const usage = 'Usage: tag plan "objective" [repository]\n       tag record <graph.json> <node-id> "what happened"\n       tag input <graph.json> <from> <kind> "what was said"\n       tag adopt <new-graph.json> <durable-graph.json>\n       tag check <proposed-graph.json> <durable-graph.json>\n       tag observe <graph.json|failed-run.json>\n       tag task open <task.json> <id> "statement" "verified completion means…" ["reserved decision"…]\n       tag task intent <task.json> <from> <kind> "what was said"\n       tag task op <task.json> <by> <operation> "bounded question" "what it reported" ["evidence"…]\n       tag task verify <task.json> "command"\n       tag task ask <task.json> <evidence operation numbers> "decision required" "why a machine cannot settle it" "what continues after the answer" "option"…\n       tag task close <task.json> "how the cited evidence establishes completion" <operation number>…\n       tag task show <task.json>';
+const usage = 'Usage: tag plan "objective" [repository]\n       tag record <graph.json> <node-id> "what happened"\n       tag input <graph.json> <from> <kind> "what was said"\n       tag adopt <new-graph.json> <durable-graph.json>\n       tag check <proposed-graph.json> <durable-graph.json>\n       tag observe <graph.json|failed-run.json>\n       tag task open <task.json> <id> "statement" "verified completion means…" ["reserved decision"…]\n       tag task intent <task.json> <from> <kind> "what was said"\n       tag task op <task.json> <by> <operation> "bounded question" "what it reported" ["evidence"…]\n       tag task verify <task.json> "command"\n       tag task ask <task.json> <evidence operation numbers> "decision required" "why a machine cannot settle it" "what continues after the answer" "option"…\n       tag task answer <task.json> <from> "what the human said"\n       tag task close <task.json> "how the cited evidence establishes completion" <operation number>…\n       tag task show <task.json>';
 const [command, ...rest] = process.argv.slice(2);
 if (command === '--help' || command === '-h') {
   console.log(`${usage}\nplan requires OPENROUTER_API_KEY, writes .tag/graph.json and .tag/graph.html, then stops.\nrecord appends an outcome to one node of an existing graph and re-renders its HTML.\ninput appends something said from outside the graph — a human or agent objective, observation, belief, question, priority or constraint — in the words it arrived in, attached to no node.\nadopt replaces a durable graph with a newer one for the same objective, carrying every recorded outcome across.\ncheck asks, in one bounded model request, which of a graph's proposed tasks the recorded outcomes already report as done or refuted, and verifies every quote against those outcomes.\nobserve reports what a run actually did, without calling a model.`);
@@ -61,8 +61,8 @@ if (command === '--help' || command === '-h') {
   } else {
     try {
       // Paths are kept as written so the provenance a durable graph records stays repository-relative.
-      const { htmlPath, nodes, carried, retired } = await adopt(fromPath, ontoPath);
-      console.log(`Adopted ${nodes} nodes, carried ${carried} recorded outcomes (${retired} for retired nodes); re-rendered ${htmlPath}`);
+      const { htmlPath, nodes, carried, retired, inputs, brought } = await adopt(fromPath, ontoPath);
+      console.log(`Adopted ${nodes} nodes, carried ${carried} recorded outcomes (${retired} for retired nodes) and ${inputs} recorded input(s), ${brought} of them from the adopted graph; re-rendered ${htmlPath}`);
     } catch (error) {
       console.error(`Adopting stopped: ${error.message}`);
       process.exitCode = 1;
@@ -114,6 +114,11 @@ if (command === '--help' || command === '-h') {
       const question = await askTask(resolve(taskPath), { decision, why, continues, options, cited: cited.split(',').map(item => item.trim()).filter(Boolean) });
       console.log(`Control returned to a human. ${question.decision}`);
       process.exitCode = 2;
+    } else if (subcommand === 'answer') {
+      const [from, text, ...extra] = args;
+      if (!taskPath?.trim() || !from?.trim() || !text?.trim() || extra.length) throw new Error(usage);
+      const answered = await answerTask(resolve(taskPath), from, text);
+      console.log(`Answer from ${answered.from} recorded; the task is open again.`);
     } else if (subcommand === 'close') {
       const [statement, ...cited] = args;
       if (!taskPath?.trim() || !statement?.trim()) throw new Error(usage);

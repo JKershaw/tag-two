@@ -57,11 +57,16 @@ export function validateTask(task) {
   if (task.question !== undefined && (!nonempty(task.question.at) || !nonempty(task.question.decision)
     || !nonempty(task.question.why) || !nonempty(task.question.continues)
     || !Array.isArray(task.question.options) || task.question.options.length < 2 || !task.question.options.every(nonempty)
-    || !Array.isArray(task.question.evidence) || !task.question.evidence.every(nonempty))) {
+    || !Array.isArray(task.question.evidence) || !task.question.evidence.every(nonempty)
+    || (task.question.answered !== undefined && (!nonempty(task.question.answered.at)
+      || !nonempty(task.question.answered.from) || !nonempty(task.question.answered.text))))) {
     throw new Error('A question must record {at, decision, why, continues, options, evidence} with at least two options.');
   }
   if (task.state === 'needs-human' && task.question === undefined) {
     throw new Error('A task needs a human exactly when it records what it is asking.');
+  }
+  if (task.state === 'needs-human' && task.question?.answered !== undefined) {
+    throw new Error('A question that records an answer is no longer waiting on a human.');
   }
   return task;
 }
@@ -127,7 +132,10 @@ export function showTask(task) {
         `  Why a machine cannot settle it: ${task.question.why}`,
         `  Resting on:\n${task.question.evidence.map(line => `    - ${line}`).join('\n')}`,
         `  Options:\n${task.question.options.map(option => `    - ${option}`).join('\n')}`,
-        `  What continues once it is answered: ${task.question.continues}`].join('\n')
+        `  What continues once it is answered: ${task.question.continues}`,
+        task.question.answered
+          ? `  Answered ${task.question.answered.at} by ${task.question.answered.from}, in their words: ${task.question.answered.text}`
+          : '  Not yet answered.'].join('\n')
       : '',
     task.closed
       ? `Closed ${task.closed.at}: ${task.closed.statement}\nRelied on:\n${task.closed.relied.map(line => `  - ${line}`).join('\n')}`
@@ -213,6 +221,25 @@ export async function askTask(path, { decision, why, continues, options, cited }
   };
   await writeTask(path, task);
   return task.question;
+}
+
+// The human answered and there was nowhere to put it. Filing it as intent would lose what it is an
+// answer to, and re-reading it out of a chat transcript is exactly the reconstruction this whole
+// experiment is trying to remove. The answer is kept on the question it answers, in the words it
+// arrived in, and control goes back to the runner. What the answer *means* is not interpreted here:
+// the first real one was "I don't understand the consequences well enough to choose, give me your
+// recommendation", which is a delegation and not a ruling on the merits, and it is stored as said.
+export async function answerTask(path, from, text, { now = () => new Date().toISOString() } = {}) {
+  for (const [name, value] of [['source', from], ['answer', text]]) {
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`A ${name} is required.`);
+  }
+  const task = await readTask(path);
+  if (task.state !== 'needs-human' || !task.question) throw new Error(`${task.id} is not waiting on an answer.`);
+  if (task.question.answered) throw new Error(`${task.id} already records an answer.`);
+  task.question.answered = { at: now(), from: from.trim(), text: text.trim() };
+  task.state = 'open';
+  await writeTask(path, task);
+  return task.question.answered;
 }
 
 export async function closeTask(path, statement, cited, { now = () => new Date().toISOString() } = {}) {

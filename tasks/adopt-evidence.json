@@ -11,6 +11,12 @@
       "from": "harbour",
       "kind": "constraint",
       "text": "Use only commands the README documents. A loss that requires hand-editing a graph file is not a finding."
+    },
+    {
+      "at": "2026-09-16T05:27:58.846Z",
+      "from": "john",
+      "kind": "decision",
+      "text": "Merge both sets of evidence, in time order, dropping exact duplicates. Confirmed after being given the implementation consequences: roughly six lines in src/adopt.js, nothing discarded, the printed count becomes honest, and the cost is visible duplicate rows when the same work is recorded on both graphs — which the project already tolerates, since outcomes accumulate rather than replace."
     }
   ],
   "operations": [
@@ -50,9 +56,48 @@
         "operation 1: REPRODUCED, 1 outcome and 1 input present before adopt and absent after",
         "operation 2: REPRODUCED, durable kept, replacement dropped"
       ]
+    },
+    {
+      "at": "2026-09-16T05:28:51.183Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `for s in tasks/adopt-evidence.repro.sh tasks/adopt-evidence.repro-2.sh; do echo \"--- $s\"; if sh $s | tail -2; then echo \"STILL REPRODUCES: $s\"; exit 1; fi; done; echo 'NEITHER REPRODUCTION STILL REPRODUCES'` succeed?",
+      "result": "It exited 1. The command ran and reported failure.",
+      "evidence": [
+        "$ for s in tasks/adopt-evidence.repro.sh tasks/adopt-evidence.repro-2.sh; do echo \"--- $s\"; if sh $s | tail -2; then echo \"STILL REPRODUCES: $s\"; exit 1; fi; done; echo 'NEITHER REPRODUCTION STILL REPRODUCES'",
+        "exit status 1",
+        "stdout (last lines):\n--- tasks/adopt-evidence.repro.sh\nafter adopt: durable graph holds 1 outcome(s) and 1 input(s)\nNOT REPRODUCED: evidence survived the adopt.\nSTILL REPRODUCES: tasks/adopt-evidence.repro.sh"
+      ],
+      "exit": 1
+    },
+    {
+      "at": "2026-09-16T05:29:05.007Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `still=0; for s in tasks/adopt-evidence.repro.sh tasks/adopt-evidence.repro-2.sh; do out=$(sh $s 2>&1); rc=$?; echo \"--- $s exited $rc\"; echo \"$out\" | tail -1; if [ $rc -eq 0 ]; then still=1; fi; done; if [ $still -eq 0 ]; then echo 'NEITHER REPRODUCTION STILL REPRODUCES'; fi; exit $still` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ still=0; for s in tasks/adopt-evidence.repro.sh tasks/adopt-evidence.repro-2.sh; do out=$(sh $s 2>&1); rc=$?; echo \"--- $s exited $rc\"; echo \"$out\" | tail -1; if [ $rc -eq 0 ]; then still=1; fi; done; if [ $still -eq 0 ]; then echo 'NEITHER REPRODUCTION STILL REPRODUCES'; fi; exit $still",
+        "exit status 0",
+        "stdout (last lines):\n--- tasks/adopt-evidence.repro.sh exited 1\nNOT REPRODUCED: evidence survived the adopt.\n--- tasks/adopt-evidence.repro-2.sh exited 1\nNOT REPRODUCED.\nNEITHER REPRODUCTION STILL REPRODUCES"
+      ],
+      "exit": 0
+    },
+    {
+      "at": "2026-09-16T05:29:19.196Z",
+      "by": "tag verify",
+      "operation": "verify",
+      "question": "Does `npm test 2>&1 | tail -5` succeed?",
+      "result": "It exited 0. The command ran and reported success.",
+      "evidence": [
+        "$ npm test 2>&1 | tail -5",
+        "exit status 0",
+        "stdout (last lines):\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1003.265735"
+      ],
+      "exit": 0
     }
   ],
-  "state": "needs-human",
+  "state": "complete",
   "openedAt": "2026-09-15T21:38:53.495Z",
   "question": {
     "at": "2026-09-15T21:41:04.465Z",
@@ -68,6 +113,19 @@
       "operation 1 (verify by tag verify): It exited 0. The command ran and reported success.",
       "operation 2 (verify by tag verify): It exited 0. The command ran and reported success.",
       "operation 3 (read by steward): Two reachable losses are established by executed commands, both using only documented commands on unedited archived planner outputs. When the durable graph holds no recorded evidence, the replacement's outcomes and inputs are deleted. When both hold evidence, the durable graph's is kept and the replacement's is dropped. In the first case adopt prints 'carried 0 recorded outcomes' while discarding one. What should happen instead is not settleable by investigation: refusing, merging and documenting a precondition are all defensible and they mean different things about what a durable record is."
+    ],
+    "answered": {
+      "at": "2026-09-16T05:25:55.238Z",
+      "from": "john",
+      "text": "I don't understand the implementation consequences well enough to choose. Give me your recommendation and I'll normally accept it."
+    }
+  },
+  "closed": {
+    "at": "2026-09-16T05:29:19.266Z",
+    "statement": "Both reachable losses were established by executed reproductions (operations 1 and 2), the fix John chose was implemented as a merge in time order with exact duplicates dropped, and the evidence for the close is that neither reproduction still reproduces (operation 5) while the suite passes with two new regression tests covering the merged and deduplicated cases (operation 6). Operation 4 is left in the record: it is the same re-run with a shell bug that hid the scripts' exit status, and tag verify recorded its failure rather than accepting the claim.",
+    "relied": [
+      "operation 5: $ still=0; for s in tasks/adopt-evidence.repro.sh tasks/adopt-evidence.repro-2.sh; do out=$(sh $s 2>&1); rc=$?; echo \"--- $s exited $rc\"; echo \"$out\" | tail -1; if [ $rc -eq 0 ]; then still=1; fi; done; if [ $still -eq 0 ]; then echo 'NEITHER REPRODUCTION STILL REPRODUCES'; fi; exit $still → exit status 0",
+      "operation 6: $ npm test 2>&1 | tail -5 → exit status 0"
     ]
   }
 }

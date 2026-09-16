@@ -97,7 +97,14 @@ node /absolute/path/to/tag-two/bin/tag.js adopt .tag/graph.json graph/graph.json
 ```
 
 `adopt` replaces the durable graph wholesale and carries every recorded outcome and every
-recorded input across, refusing a graph that answers a different objective. Outcomes whose node no
+recorded input across, refusing a graph that answers a different objective. Evidence recorded on
+the graph being adopted is carried too: both records are merged in time order and only items
+identical in every field are dropped as duplicates, so the same outcome recorded on both graphs
+appears once and two differently worded accounts of it appear side by side. Until this was fixed
+the adopted graph's own evidence was discarded — silently when the durable graph had some of its
+own, and while printing "carried 0 recorded outcomes" when it had none. Both losses are reproduced
+by `tasks/adopt-evidence.repro.sh` and `tasks/adopt-evidence.repro-2.sh`, which now report that
+evidence survives. Outcomes whose node no
 longer exists are kept and shown separately rather than discarded. The new graph's
 investigation transcript is left behind with the archived run and referenced by path,
 because a durable graph larger than one `read_file` call cannot be read by the planner
